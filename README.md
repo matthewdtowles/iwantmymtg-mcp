@@ -1,4 +1,4 @@
-# iwmm-mcp-server
+# iwantmymtg-mcp
 
 An [MCP](https://modelcontextprotocol.io) server for [I Want My MTG](https://iwantmymtg.net). Exposes IWMM's API as tools so Claude Desktop, Claude Code, Cursor, and other MCP clients can search Magic: The Gathering cards/sets and manage a user's collection conversationally.
 
@@ -16,7 +16,7 @@ More authenticated tools (transactions, portfolio breakdowns, price alerts, noti
 Requires Node 20+.
 
 ```bash
-npx iwmm-mcp-server
+npx iwantmymtg-mcp
 ```
 
 (Until published to npm, use the local install instructions below.)
@@ -30,7 +30,7 @@ Add to `claude_desktop_config.json` (macOS: `~/Library/Application Support/Claud
   "mcpServers": {
     "iwmm": {
       "command": "npx",
-      "args": ["-y", "iwmm-mcp-server"],
+      "args": ["-y", "iwantmymtg-mcp"],
       "env": {
         "IWMM_API_KEY": "iwm_live_..."
       }
@@ -50,7 +50,7 @@ Add to `.mcp.json` in your project (or `~/.claude/.mcp.json` globally):
   "mcpServers": {
     "iwmm": {
       "command": "npx",
-      "args": ["-y", "iwmm-mcp-server"],
+      "args": ["-y", "iwantmymtg-mcp"],
       "env": { "IWMM_API_KEY": "iwm_live_..." }
     }
   }

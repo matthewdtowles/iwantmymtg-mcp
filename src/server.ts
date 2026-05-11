@@ -11,7 +11,7 @@ import { ApiError } from "./api-client.js";
 export async function startServer() {
   const server = new Server(
     {
-      name: "iwmm-mcp-server",
+      name: "iwantmymtg-mcp",
       version: "0.0.1",
     },
     {

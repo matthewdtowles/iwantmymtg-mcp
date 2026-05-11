@@ -35,7 +35,7 @@ export async function apiFetch<T = unknown>(req: ApiRequest): Promise<T> {
 
   const headers: Record<string, string> = {
     Accept: "application/json",
-    "User-Agent": "iwmm-mcp-server/0.0.1",
+    "User-Agent": "iwantmymtg-mcp/0.0.1",
   };
 
   if (req.authenticated) {
