@@ -1,7 +1,13 @@
+// Reads env lazily so callers and tests see live values rather than a snapshot
+// taken at import time.
 export const config = {
-  baseUrl: process.env.IWMM_BASE_URL ?? "https://iwantmymtg.net",
-  apiKey: process.env.IWMM_API_KEY,
-} as const;
+  get baseUrl(): string {
+    return process.env.IWMM_BASE_URL ?? "https://iwantmymtg.net";
+  },
+  get apiKey(): string | undefined {
+    return process.env.IWMM_API_KEY;
+  },
+};
 
 export function requireApiKey(): string {
   if (!config.apiKey) {
