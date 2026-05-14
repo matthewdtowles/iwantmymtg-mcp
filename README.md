@@ -19,7 +19,12 @@ Requires Node 20+.
 npx iwantmymtg-mcp
 ```
 
-(Until published to npm, use the local install instructions below.)
+Or install globally if you prefer:
+
+```bash
+npm install -g iwantmymtg-mcp
+iwantmymtg-mcp
+```
 
 ## Claude Desktop
 
@@ -57,12 +62,32 @@ Add to `.mcp.json` in your project (or `~/.claude/.mcp.json` globally):
 }
 ```
 
+## Cursor
+
+Add to `~/.cursor/mcp.json` (global) or `.cursor/mcp.json` in your project:
+
+```json
+{
+  "mcpServers": {
+    "iwmm": {
+      "command": "npx",
+      "args": ["-y", "iwantmymtg-mcp"],
+      "env": { "IWMM_API_KEY": "iwm_live_..." }
+    }
+  }
+}
+```
+
+After saving, restart Cursor and confirm `iwmm` appears under **Settings -> Features -> MCP Servers**.
+
 ## Example prompts
 
 - "Search for Lightning Bolt printings and show me the cheapest one."
 - "What's the price history of Bloodbraid Elf from Modern Horizons 3?"
 - "Add 4 copies of Lightning Bolt LEA to my inventory."
 - "What sealed products are available for MH3?"
+
+See [`examples/`](./examples/README.md) for walkthroughs of common flows (card lookup, inventory, transactions, portfolio insights, price alerts).
 
 ## Configuration
 

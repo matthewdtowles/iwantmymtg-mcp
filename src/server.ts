@@ -6,13 +6,13 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { tools, toolsByName } from "./tools/index.js";
-import { ApiError } from "./api-client.js";
+import { formatError } from "./error-formatter.js";
 
 export async function startServer() {
   const server = new Server(
     {
       name: "iwantmymtg-mcp",
-      version: "0.0.1",
+      version: "0.2.0",
     },
     {
       capabilities: {
@@ -65,14 +65,3 @@ export async function startServer() {
   await server.connect(transport);
 }
 
-function formatError(err: unknown): string {
-  if (err instanceof ApiError) {
-    const rl = err.rateLimit;
-    const rateNote =
-      rl?.remaining !== undefined
-        ? ` (rate limit: ${rl.remaining}/${rl.limit} remaining, resets ${rl.reset ?? "?"})`
-        : "";
-    return `IWMM API responded ${err.status}${rateNote}: ${err.body}`;
-  }
-  return err instanceof Error ? err.message : String(err);
-}
