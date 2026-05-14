@@ -1,6 +1,6 @@
 {
   "name": "iwantmymtg-mcp",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "MCP server for I Want My MTG - query cards/sets and manage your collection from Claude Desktop, Claude Code, Cursor, and other MCP clients.",
   "type": "module",
   "bin": {
