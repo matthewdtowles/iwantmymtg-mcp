@@ -4,6 +4,7 @@ dist/
 .DS_Store
 .env
 .env.local
+.mcp.json
 coverage/
 
 .claude/pr-review-fix-state.json
