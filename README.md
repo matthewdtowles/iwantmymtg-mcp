@@ -87,7 +87,7 @@ After saving, restart Cursor and confirm `iwmm` appears under **Settings -> Feat
 - "Add 4 copies of Lightning Bolt LEA to my inventory."
 - "What sealed products are available for MH3?"
 
-See [`examples/`](./examples/README.md) for walkthroughs of common flows (card lookup, inventory, transactions, portfolio insights, price alerts).
+See [`examples/`](https://github.com/matthewdtowles/iwantmymtg-mcp/tree/main/examples) for walkthroughs of common flows (card lookup, inventory, transactions, portfolio insights, price alerts).
 
 ## Configuration
 
