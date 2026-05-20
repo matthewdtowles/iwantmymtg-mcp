@@ -8,10 +8,25 @@ type FetchCall = { url: string; init: RequestInit };
 let calls: FetchCall[];
 const originalFetch = globalThis.fetch;
 
+function captureFetch(input: RequestInfo | URL, init?: RequestInit): FetchCall {
+  // openapi-fetch passes a Request; legacy apiFetch passes URL/string.
+  if (input instanceof Request) {
+    return {
+      url: input.url,
+      init: {
+        method: input.method,
+        headers: input.headers,
+        body: init?.body,
+      },
+    };
+  }
+  return { url: String(input), init: init ?? {} };
+}
+
 function setup() {
   calls = [];
   globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
-    calls.push({ url: String(input), init: init ?? {} });
+    calls.push(captureFetch(input, init));
     return new Response(JSON.stringify({ ok: true }), {
       status: 200,
       headers: { "content-type": "application/json" },

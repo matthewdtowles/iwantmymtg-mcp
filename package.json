@@ -11,6 +11,8 @@
     "README.md"
   ],
   "scripts": {
+    "build:types": "node scripts/build-types.mjs",
+    "prebuild": "npm run build:types",
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "tsc --watch",
@@ -36,11 +38,13 @@
   "homepage": "https://iwantmymtg.net",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
+    "openapi-fetch": "^0.17.0",
     "zod": "^3.23.0",
     "zod-to-json-schema": "^3.23.0"
   },
   "devDependencies": {
     "@types/node": "^20.14.0",
+    "openapi-typescript": "^7.13.0",
     "tsx": "^4.16.0",
     "typescript": "^5.5.0"
   }

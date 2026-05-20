@@ -1,15 +1,25 @@
 import { z } from "zod";
-import { apiFetch } from "../api-client.js";
+import { apiClient } from "../api-client.js";
+import { ApiError } from "../api-client.js";
 
 export const getCardInputSchema = {
   setCode: z.string().describe("Set code (e.g. 'lea')."),
   setNumber: z.string().describe("Collector number within the set (e.g. '161'). String, not int - some sets use suffixes like '12a'."),
 };
 
-export async function getCard(input: { setCode: string; setNumber: string }) {
-  return apiFetch({
-    path: `/api/v1/cards/${encodeURIComponent(input.setCode)}/${encodeURIComponent(input.setNumber)}`,
-  });
+type CardKey = { setCode: string; setNumber: string };
+
+function unwrap<T>(data: T | undefined, error: unknown): T {
+  if (error) throw error instanceof ApiError ? error : new Error(String(error));
+  return data as T;
+}
+
+export async function getCard(input: CardKey) {
+  const { data, error } = await apiClient.GET(
+    "/api/v1/cards/{setCode}/{setNumber}",
+    { params: { path: input } },
+  );
+  return unwrap(data, error);
 }
 
 export const getCardTool = {
@@ -24,10 +34,13 @@ export const getCardPricesTool = {
   name: "get_card_prices",
   description: "Get current normal and foil prices for a specific card printing.",
   inputSchema: z.object(getCardInputSchema),
-  handler: async (input: { setCode: string; setNumber: string }) =>
-    apiFetch({
-      path: `/api/v1/cards/${encodeURIComponent(input.setCode)}/${encodeURIComponent(input.setNumber)}/prices`,
-    }),
+  handler: async (input: CardKey) => {
+    const { data, error } = await apiClient.GET(
+      "/api/v1/cards/{setCode}/{setNumber}/prices",
+      { params: { path: input } },
+    );
+    return unwrap(data, error);
+  },
 };
 
 export const getCardPriceHistoryTool = {
@@ -35,8 +48,11 @@ export const getCardPriceHistoryTool = {
   description:
     "Get the 30-day price history for a card printing (normal + foil). Older data is retained on a weekly/monthly cadence beyond 30 days.",
   inputSchema: z.object(getCardInputSchema),
-  handler: async (input: { setCode: string; setNumber: string }) =>
-    apiFetch({
-      path: `/api/v1/cards/${encodeURIComponent(input.setCode)}/${encodeURIComponent(input.setNumber)}/price-history`,
-    }),
+  handler: async (input: CardKey) => {
+    const { data, error } = await apiClient.GET(
+      "/api/v1/cards/{setCode}/{setNumber}/price-history",
+      { params: { path: input } },
+    );
+    return unwrap(data, error);
+  },
 };
