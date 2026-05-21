@@ -29,7 +29,7 @@ When `iwantmymtg` ships an API change that breaks the generated types:
 
 ### Adding a new tool
 
-Prefer the typed `apiClient` over the legacy `apiFetch`:
+Use the typed `apiClient`, which checks paths and params against the generated spec:
 
 ```ts
 import { apiClient } from "../api-client.js";

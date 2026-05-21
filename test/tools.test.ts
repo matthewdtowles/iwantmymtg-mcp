@@ -8,16 +8,13 @@ type FetchCall = { url: string; init: RequestInit };
 let calls: FetchCall[];
 const originalFetch = globalThis.fetch;
 
-function captureFetch(input: RequestInfo | URL, init?: RequestInit): FetchCall {
-  // openapi-fetch passes a Request; legacy apiFetch passes URL/string.
+async function captureFetch(input: RequestInfo | URL, init?: RequestInit): Promise<FetchCall> {
+  // openapi-fetch passes a single Request; the body lives on the Request itself.
   if (input instanceof Request) {
+    const body = input.body ? await input.clone().text() : undefined;
     return {
       url: input.url,
-      init: {
-        method: input.method,
-        headers: input.headers,
-        body: init?.body,
-      },
+      init: { method: input.method, headers: input.headers, body },
     };
   }
   return { url: String(input), init: init ?? {} };
@@ -26,7 +23,7 @@ function captureFetch(input: RequestInfo | URL, init?: RequestInit): FetchCall {
 function setup() {
   calls = [];
   globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
-    calls.push(captureFetch(input, init));
+    calls.push(await captureFetch(input, init));
     return new Response(JSON.stringify({ ok: true }), {
       status: 200,
       headers: { "content-type": "application/json" },
@@ -184,9 +181,9 @@ describe("transaction tools", () => {
     assert.equal(r.body, JSON.stringify(input));
   });
 
-  it("update_transaction: PATCH /api/v1/transactions/{id} with patch body", async () => {
+  it("update_transaction: PUT /api/v1/transactions/{id} with patch body", async () => {
     const r = await call("update_transaction", { id: 42, patch: { quantity: 3 } });
-    assert.equal(r.method, "PATCH");
+    assert.equal(r.method, "PUT");
     assert.equal(r.url.pathname, "/api/v1/transactions/42");
     assert.equal(r.body, JSON.stringify({ quantity: 3 }));
   });

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { apiFetch } from "../api-client.js";
+import { apiClient, unwrap } from "../api-client.js";
 
 export const searchSetsTool = {
   name: "search_sets",
@@ -9,16 +9,24 @@ export const searchSetsTool = {
     page: z.number().int().min(1).optional(),
     limit: z.number().int().min(1).max(100).optional(),
   }),
-  handler: (input: Record<string, unknown>) =>
-    apiFetch({ path: "/api/v1/sets", query: input as Record<string, string | number | undefined> }),
+  handler: async (input: Record<string, unknown>) => {
+    const { data, error } = await apiClient.GET("/api/v1/sets", {
+      params: { query: input as never },
+    });
+    return unwrap(data, error);
+  },
 };
 
 export const getSetTool = {
   name: "get_set",
   description: "Get detail for a single set by code (e.g. 'lea', 'mh3').",
   inputSchema: z.object({ code: z.string() }),
-  handler: ({ code }: { code: string }) =>
-    apiFetch({ path: `/api/v1/sets/${encodeURIComponent(code)}` }),
+  handler: async ({ code }: { code: string }) => {
+    const { data, error } = await apiClient.GET("/api/v1/sets/{code}", {
+      params: { path: { code } },
+    });
+    return unwrap(data, error);
+  },
 };
 
 export const listSetCardsTool = {
@@ -34,11 +42,12 @@ export const listSetCardsTool = {
     page: z.number().int().min(1).optional(),
     limit: z.number().int().min(1).max(100).optional(),
   }),
-  handler: ({ code, ...rest }: { code: string } & Record<string, unknown>) =>
-    apiFetch({
-      path: `/api/v1/sets/${encodeURIComponent(code)}/cards`,
-      query: rest as Record<string, string | number | undefined>,
-    }),
+  handler: async ({ code, ...rest }: { code: string } & Record<string, unknown>) => {
+    const { data, error } = await apiClient.GET("/api/v1/sets/{code}/cards", {
+      params: { path: { code }, query: rest as never },
+    });
+    return unwrap(data, error);
+  },
 };
 
 export const getSealedProductsTool = {
@@ -46,6 +55,10 @@ export const getSealedProductsTool = {
   description:
     "List sealed products (booster boxes, bundles, commander decks, etc.) for a set. Each entry includes a TCGPlayer purchase URL.",
   inputSchema: z.object({ code: z.string() }),
-  handler: ({ code }: { code: string }) =>
-    apiFetch({ path: `/api/v1/sets/${encodeURIComponent(code)}/sealed-products` }),
+  handler: async ({ code }: { code: string }) => {
+    const { data, error } = await apiClient.GET("/api/v1/sets/{code}/sealed-products", {
+      params: { path: { code } },
+    });
+    return unwrap(data, error);
+  },
 };

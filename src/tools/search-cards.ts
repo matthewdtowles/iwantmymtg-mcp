@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { apiFetch } from "../api-client.js";
+import { apiClient, unwrap } from "../api-client.js";
 
 export const searchCardsInputSchema = {
   q: z
@@ -28,10 +28,12 @@ export const searchCardsInputSchema = {
 };
 
 export async function searchCards(input: Record<string, unknown>) {
-  return apiFetch({
-    path: "/api/v1/cards",
-    query: input as Record<string, string | number | undefined>,
+  // zod validates the query at the tool boundary; the generated spec types
+  // most of these params as `unknown`, so cast rather than fight the spec.
+  const { data, error } = await apiClient.GET("/api/v1/cards", {
+    params: { query: input as never },
   });
+  return unwrap(data, error);
 }
 
 export const searchCardsTool = {

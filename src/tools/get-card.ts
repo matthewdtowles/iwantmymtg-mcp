@@ -1,6 +1,5 @@
 import { z } from "zod";
-import { apiClient } from "../api-client.js";
-import { ApiError } from "../api-client.js";
+import { apiClient, unwrap } from "../api-client.js";
 
 export const getCardInputSchema = {
   setCode: z.string().describe("Set code (e.g. 'lea')."),
@@ -8,11 +7,6 @@ export const getCardInputSchema = {
 };
 
 type CardKey = { setCode: string; setNumber: string };
-
-function unwrap<T>(data: T | undefined, error: unknown): T {
-  if (error) throw error instanceof ApiError ? error : new Error(String(error));
-  return data as T;
-}
 
 export async function getCard(input: CardKey) {
   const { data, error } = await apiClient.GET(

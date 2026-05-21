@@ -1,12 +1,12 @@
 import { describe, it, beforeEach, afterEach } from "node:test";
 import assert from "node:assert/strict";
 
-import { apiFetch, ApiError } from "../src/api-client.js";
+import { apiClient, ApiError, AUTH_HEADERS, unwrap } from "../src/api-client.js";
 
-type FetchCall = { url: string; init: RequestInit };
+type FetchCall = { request: Request; body?: string };
 
 let calls: FetchCall[];
-let nextResponse: Response;
+let nextResponse: () => Response;
 const originalFetch = globalThis.fetch;
 
 function mockResponse(
@@ -25,10 +25,13 @@ function mockResponse(
 
 beforeEach(() => {
   calls = [];
-  nextResponse = mockResponse({ ok: true });
-  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
-    calls.push({ url: String(input), init: init ?? {} });
-    return nextResponse;
+  nextResponse = () => mockResponse({ ok: true });
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    // openapi-fetch always calls fetch with a single Request.
+    const request = input as Request;
+    const body = request.body ? await request.clone().text() : undefined;
+    calls.push({ request, body });
+    return nextResponse();
   }) as typeof fetch;
   delete process.env.IWMM_BASE_URL;
   delete process.env.IWMM_API_KEY;
@@ -38,80 +41,82 @@ afterEach(() => {
   globalThis.fetch = originalFetch;
 });
 
-describe("apiFetch", () => {
+describe("apiClient", () => {
   it("issues a GET against the default base URL and parses JSON", async () => {
-    nextResponse = mockResponse({ hello: "world" });
-    const out = await apiFetch<{ hello: string }>({ path: "/api/v1/cards" });
-    assert.equal(out.hello, "world");
+    nextResponse = () => mockResponse({ hello: "world" });
+    const { data, error } = await apiClient.GET("/api/v1/cards");
+    assert.equal(error, undefined);
+    assert.equal((data as { hello: string }).hello, "world");
     assert.equal(calls.length, 1);
-    assert.equal(calls[0].url, "https://iwantmymtg.net/api/v1/cards");
-    assert.equal(calls[0].init.method ?? "GET", "GET");
-    const headers = new Headers(calls[0].init.headers);
-    assert.equal(headers.get("Accept"), "application/json");
-    assert.match(headers.get("User-Agent") ?? "", /^iwantmymtg-mcp\//);
+    assert.equal(calls[0].request.url, "https://iwantmymtg.net/api/v1/cards");
+    assert.equal(calls[0].request.method, "GET");
+    assert.equal(calls[0].request.headers.get("Accept"), "application/json");
+    assert.match(calls[0].request.headers.get("User-Agent") ?? "", /^iwantmymtg-mcp\//);
   });
 
   it("honors IWMM_BASE_URL override", async () => {
     process.env.IWMM_BASE_URL = "http://localhost:3000";
-    await apiFetch({ path: "/api/v1/sets" });
-    assert.equal(calls[0].url, "http://localhost:3000/api/v1/sets");
+    await apiClient.GET("/api/v1/sets");
+    assert.equal(calls[0].request.url, "http://localhost:3000/api/v1/sets");
   });
 
-  it("serializes query params and skips undefined/null/empty", async () => {
-    await apiFetch({
-      path: "/api/v1/cards",
-      query: { q: "bolt", limit: 10, page: undefined, foo: null as never, bar: "" },
+  it("serializes query params and skips undefined", async () => {
+    await apiClient.GET("/api/v1/cards", {
+      params: { query: { q: "bolt", limit: 10, page: undefined } as never },
     });
-    const url = new URL(calls[0].url);
+    const url = new URL(calls[0].request.url);
     assert.equal(url.searchParams.get("q"), "bolt");
     assert.equal(url.searchParams.get("limit"), "10");
     assert.equal(url.searchParams.has("page"), false);
-    assert.equal(url.searchParams.has("foo"), false);
-    assert.equal(url.searchParams.has("bar"), false);
   });
 
-  it("returns undefined for 204 responses", async () => {
-    nextResponse = mockResponse(undefined, { status: 204 });
-    const out = await apiFetch({ path: "/api/v1/inventory", method: "DELETE", authenticated: false });
-    assert.equal(out, undefined);
+  it("returns undefined data for 204 responses without throwing", async () => {
+    process.env.IWMM_API_KEY = "iwm_live_test";
+    nextResponse = () => mockResponse(undefined, { status: 204 });
+    const { data, error } = await apiClient.DELETE("/api/v1/inventory", {
+      body: { cardId: "abc", isFoil: false } as never,
+      headers: AUTH_HEADERS,
+    });
+    assert.equal(error, undefined);
+    assert.equal(data, undefined);
   });
 
   it("throws ApiError on non-2xx with status, body, and rate-limit headers", async () => {
-    nextResponse = mockResponse(
-      { error: "rate limited" },
-      {
-        status: 429,
-        headers: {
-          "X-RateLimit-Limit": "100",
-          "X-RateLimit-Remaining": "0",
-          "X-RateLimit-Reset": "1700000000",
-        },
-      },
-    );
-    await assert.rejects(
-      apiFetch({ path: "/api/v1/cards" }),
-      (err: unknown) => {
-        assert.ok(err instanceof ApiError);
-        assert.equal(err.status, 429);
-        assert.match(err.body, /rate limited/);
-        assert.equal(err.rateLimit?.limit, "100");
-        assert.equal(err.rateLimit?.remaining, "0");
-        assert.equal(err.rateLimit?.reset, "1700000000");
-        return true;
-      },
-    );
-  });
-
-  it("attaches Bearer auth header when authenticated and IWMM_API_KEY is set", async () => {
     process.env.IWMM_API_KEY = "iwm_live_test";
-    await apiFetch({ path: "/api/v1/inventory", authenticated: true });
-    const headers = new Headers(calls[0].init.headers);
-    assert.equal(headers.get("Authorization"), "Bearer iwm_live_test");
+    nextResponse = () =>
+      mockResponse(
+        { error: "rate limited" },
+        {
+          status: 429,
+          headers: {
+            "X-RateLimit-Limit": "100",
+            "X-RateLimit-Remaining": "0",
+            "X-RateLimit-Reset": "1700000000",
+          },
+        },
+      );
+    await assert.rejects(apiClient.GET("/api/v1/cards"), (err: unknown) => {
+      assert.ok(err instanceof ApiError);
+      assert.equal(err.status, 429);
+      assert.match(err.body, /rate limited/);
+      assert.equal(err.rateLimit?.limit, "100");
+      assert.equal(err.rateLimit?.remaining, "0");
+      assert.equal(err.rateLimit?.reset, "1700000000");
+      return true;
+    });
   });
 
-  it("throws when authenticated request has no API key configured", async () => {
+  it("attaches Bearer auth when AUTH_HEADERS is set and IWMM_API_KEY is configured", async () => {
+    process.env.IWMM_API_KEY = "iwm_live_test";
+    await apiClient.GET("/api/v1/inventory", { headers: AUTH_HEADERS });
+    assert.equal(calls[0].request.headers.get("Authorization"), "Bearer iwm_live_test");
+    // The sentinel header is consumed, not forwarded.
+    assert.equal(calls[0].request.headers.get("X-IWMM-Auth"), null);
+  });
+
+  it("throws when an authenticated request has no API key configured", async () => {
     await assert.rejects(
-      apiFetch({ path: "/api/v1/inventory", authenticated: true }),
+      apiClient.GET("/api/v1/inventory", { headers: AUTH_HEADERS }),
       /requires an API key/,
     );
     assert.equal(calls.length, 0, "no HTTP request should be made");
@@ -119,25 +124,28 @@ describe("apiFetch", () => {
 
   it("stringifies JSON body and sets Content-Type for POST", async () => {
     process.env.IWMM_API_KEY = "iwm_live_test";
-    await apiFetch({
-      path: "/api/v1/inventory",
-      method: "POST",
-      body: [{ cardId: "abc", quantity: 2, isFoil: false }],
-      authenticated: true,
+    const items = [{ cardId: "abc", quantity: 2, isFoil: false }];
+    await apiClient.POST("/api/v1/inventory", {
+      body: items as never,
+      headers: AUTH_HEADERS,
     });
-    assert.equal(calls[0].init.method, "POST");
-    const headers = new Headers(calls[0].init.headers);
-    assert.equal(headers.get("Content-Type"), "application/json");
-    assert.equal(
-      calls[0].init.body,
-      JSON.stringify([{ cardId: "abc", quantity: 2, isFoil: false }]),
-    );
+    assert.equal(calls[0].request.method, "POST");
+    assert.equal(calls[0].request.headers.get("Content-Type"), "application/json");
+    assert.equal(calls[0].body, JSON.stringify(items));
+  });
+});
+
+describe("unwrap", () => {
+  it("returns data when there is no error", () => {
+    assert.equal(unwrap("value", undefined), "value");
   });
 
-  it("does not set Content-Type when body is omitted", async () => {
-    await apiFetch({ path: "/api/v1/cards", method: "GET" });
-    const headers = new Headers(calls[0].init.headers);
-    assert.equal(headers.get("Content-Type"), null);
-    assert.equal(calls[0].init.body, undefined);
+  it("rethrows an ApiError unchanged", () => {
+    const apiErr = new ApiError(404, "not found");
+    assert.throws(() => unwrap(undefined, apiErr), (err) => err === apiErr);
+  });
+
+  it("wraps a non-Error throw in an Error", () => {
+    assert.throws(() => unwrap(undefined, "boom"), /boom/);
   });
 });

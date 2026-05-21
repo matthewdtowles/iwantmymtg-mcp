@@ -67,55 +67,11 @@ export const apiClient: ApiClient = new Proxy({} as ApiClient, {
 export const AUTH_HEADERS = { "X-IWMM-Auth": "required" } as const;
 
 /**
- * Legacy untyped fetch helper. Existing tools use this; new code should prefer
- * `apiClient.GET/POST/...` against the generated `paths` types.
+ * Unwrap an openapi-fetch `{ data, error }` result. HTTP failures are already
+ * thrown as `ApiError` by the response middleware, so `error` here only carries
+ * non-HTTP failures (e.g. network errors).
  */
-export interface ApiRequest {
-  path: string;
-  method?: "GET" | "POST" | "PATCH" | "DELETE";
-  query?: Record<string, string | number | boolean | undefined>;
-  body?: unknown;
-  authenticated?: boolean;
-}
-
-export async function apiFetch<T = unknown>(req: ApiRequest): Promise<T> {
-  const url = new URL(req.path, config.baseUrl);
-  if (req.query) {
-    for (const [k, v] of Object.entries(req.query)) {
-      if (v !== undefined && v !== null && v !== "") {
-        url.searchParams.set(k, String(v));
-      }
-    }
-  }
-
-  const headers: Record<string, string> = {
-    Accept: "application/json",
-    "User-Agent": USER_AGENT,
-  };
-
-  if (req.authenticated) {
-    headers["Authorization"] = `Bearer ${requireApiKey()}`;
-  }
-
-  if (req.body !== undefined) {
-    headers["Content-Type"] = "application/json";
-  }
-
-  const res = await fetch(url, {
-    method: req.method ?? "GET",
-    headers,
-    body: req.body !== undefined ? JSON.stringify(req.body) : undefined,
-  });
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new ApiError(res.status, text, {
-      limit: res.headers.get("X-RateLimit-Limit") ?? undefined,
-      remaining: res.headers.get("X-RateLimit-Remaining") ?? undefined,
-      reset: res.headers.get("X-RateLimit-Reset") ?? undefined,
-    });
-  }
-
-  if (res.status === 204) return undefined as T;
-  return (await res.json()) as T;
+export function unwrap<T>(data: T | undefined, error: unknown): T {
+  if (error) throw error instanceof ApiError ? error : new Error(String(error));
+  return data as T;
 }
