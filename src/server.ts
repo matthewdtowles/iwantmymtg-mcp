@@ -12,7 +12,7 @@ export async function startServer() {
   const server = new Server(
     {
       name: "iwantmymtg-mcp",
-      version: "0.2.0",
+      version: "0.3.0",
     },
     {
       capabilities: {
