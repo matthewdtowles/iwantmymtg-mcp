@@ -1,8 +1,9 @@
 import createClient, { type Middleware } from "openapi-fetch";
 import { config, requireApiKey } from "./config.js";
 import type { paths } from "./generated/api-types.js";
+import { VERSION } from "./version.js";
 
-const USER_AGENT = "iwantmymtg-mcp/0.3.0";
+const USER_AGENT = `iwantmymtg-mcp/${VERSION}`;
 
 export class ApiError extends Error {
   constructor(

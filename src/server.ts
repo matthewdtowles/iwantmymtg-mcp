@@ -7,12 +7,13 @@ import {
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { tools, toolsByName } from "./tools/index.js";
 import { formatError } from "./error-formatter.js";
+import { VERSION } from "./version.js";
 
 export async function startServer() {
   const server = new Server(
     {
       name: "iwantmymtg-mcp",
-      version: "0.3.0",
+      version: VERSION,
     },
     {
       capabilities: {
