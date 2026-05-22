@@ -42,14 +42,14 @@ export const updateAlertTool = {
   description:
     "Update an existing price alert. Pass null for a threshold to clear it (Premium only - free users must keep exactly one direction). isActive toggles enable/disable without deleting. Requires IWMM_API_KEY.",
   inputSchema: z.object({
-    id: z.string().describe("Alert ID from list_price_alerts."),
+    id: z.coerce.number().int().describe("Alert ID from list_price_alerts."),
     increasePct: z.number().min(0.01).nullable().optional(),
     decreasePct: z.number().min(0.01).nullable().optional(),
     isActive: z.boolean().optional(),
   }),
-  handler: async ({ id, ...patch }: { id: string } & Record<string, unknown>) => {
+  handler: async ({ id, ...patch }: { id: number } & Record<string, unknown>) => {
     const { data, error } = await apiClient.PATCH("/api/v1/price-alerts/{id}", {
-      params: { path: { id } as never },
+      params: { path: { id } },
       body: patch as never,
       headers: AUTH_HEADERS,
     });
@@ -60,10 +60,10 @@ export const updateAlertTool = {
 export const deleteAlertTool = {
   name: "delete_price_alert",
   description: "Delete a price alert by ID. Requires IWMM_API_KEY.",
-  inputSchema: z.object({ id: z.string() }),
-  handler: async ({ id }: { id: string }) => {
+  inputSchema: z.object({ id: z.coerce.number().int() }),
+  handler: async ({ id }: { id: number }) => {
     const { data, error } = await apiClient.DELETE("/api/v1/price-alerts/{id}", {
-      params: { path: { id } as never },
+      params: { path: { id } },
       headers: AUTH_HEADERS,
     });
     return unwrap(data, error);

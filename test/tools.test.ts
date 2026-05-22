@@ -263,16 +263,16 @@ describe("price alert tools", () => {
   });
 
   it("update_price_alert: PATCH /api/v1/price-alerts/{id} with patch body excluding id", async () => {
-    const r = await call("update_price_alert", { id: "alert-1", isActive: false });
+    const r = await call("update_price_alert", { id: 1, isActive: false });
     assert.equal(r.method, "PATCH");
-    assert.equal(r.url.pathname, "/api/v1/price-alerts/alert-1");
+    assert.equal(r.url.pathname, "/api/v1/price-alerts/1");
     assert.equal(r.body, JSON.stringify({ isActive: false }));
   });
 
   it("delete_price_alert: DELETE /api/v1/price-alerts/{id}", async () => {
-    const r = await call("delete_price_alert", { id: "alert-1" });
+    const r = await call("delete_price_alert", { id: 1 });
     assert.equal(r.method, "DELETE");
-    assert.equal(r.url.pathname, "/api/v1/price-alerts/alert-1");
+    assert.equal(r.url.pathname, "/api/v1/price-alerts/1");
   });
 });
 
@@ -288,9 +288,9 @@ describe("notification tools", () => {
   });
 
   it("mark_notification_read: PATCH /api/v1/notifications/{id}/read", async () => {
-    const r = await call("mark_notification_read", { id: "n-1" });
+    const r = await call("mark_notification_read", { id: 1 });
     assert.equal(r.method, "PATCH");
-    assert.equal(r.url.pathname, "/api/v1/notifications/n-1/read");
+    assert.equal(r.url.pathname, "/api/v1/notifications/1/read");
   });
 
   it("mark_all_notifications_read: PATCH /api/v1/notifications/read-all", async () => {

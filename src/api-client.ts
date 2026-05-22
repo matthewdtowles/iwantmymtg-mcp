@@ -72,6 +72,6 @@ export const AUTH_HEADERS = { "X-IWMM-Auth": "required" } as const;
  * non-HTTP failures (e.g. network errors).
  */
 export function unwrap<T>(data: T | undefined, error: unknown): T {
-  if (error) throw error instanceof ApiError ? error : new Error(String(error));
+  if (error) throw error instanceof Error ? error : new Error(String(error));
   return data as T;
 }

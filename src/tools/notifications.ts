@@ -29,10 +29,10 @@ export const getUnreadCountTool = {
 export const markNotificationReadTool = {
   name: "mark_notification_read",
   description: "Mark a single notification as read. Requires IWMM_API_KEY.",
-  inputSchema: z.object({ id: z.string() }),
-  handler: async ({ id }: { id: string }) => {
+  inputSchema: z.object({ id: z.coerce.number().int() }),
+  handler: async ({ id }: { id: number }) => {
     const { data, error } = await apiClient.PATCH("/api/v1/notifications/{id}/read", {
-      params: { path: { id } as never },
+      params: { path: { id } },
       headers: AUTH_HEADERS,
     });
     return unwrap(data, error);
