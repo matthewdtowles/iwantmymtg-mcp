@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { apiFetch } from "../api-client.js";
+import { apiClient, AUTH_HEADERS, unwrap } from "../api-client.js";
 
 const transactionCreate = z.object({
   cardId: z.string().describe("Internal IWMM card UUID."),
@@ -37,12 +37,13 @@ export const listTransactionsTool = {
     order: z.enum(["asc", "desc"]).optional(),
     type: z.enum(["BUY", "SELL"]).optional(),
   }),
-  handler: (input: Record<string, unknown>) =>
-    apiFetch({
-      path: "/api/v1/transactions",
-      query: input as Record<string, string | number | undefined>,
-      authenticated: true,
-    }),
+  handler: async (input: Record<string, unknown>) => {
+    const { data, error } = await apiClient.GET("/api/v1/transactions", {
+      params: { query: input as never },
+      headers: AUTH_HEADERS,
+    });
+    return unwrap(data, error);
+  },
 };
 
 export const recordTransactionTool = {
@@ -50,8 +51,13 @@ export const recordTransactionTool = {
   description:
     "Record a buy or sell transaction. By default this also adjusts inventory (BUY adds, SELL subtracts). This is a real write. Requires IWMM_API_KEY.",
   inputSchema: transactionCreate,
-  handler: (input: z.infer<typeof transactionCreate>) =>
-    apiFetch({ path: "/api/v1/transactions", method: "POST", body: input, authenticated: true }),
+  handler: async (input: z.infer<typeof transactionCreate>) => {
+    const { data, error } = await apiClient.POST("/api/v1/transactions", {
+      body: input as never,
+      headers: AUTH_HEADERS,
+    });
+    return unwrap(data, error);
+  },
 };
 
 export const updateTransactionTool = {
@@ -62,16 +68,27 @@ export const updateTransactionTool = {
     id: z.number().int().min(1).describe("Transaction ID from list_transactions."),
     patch: transactionUpdate,
   }),
-  handler: ({ id, patch }: { id: number; patch: z.infer<typeof transactionUpdate> }) =>
-    apiFetch({ path: `/api/v1/transactions/${id}`, method: "PATCH", body: patch, authenticated: true }),
+  handler: async ({ id, patch }: { id: number; patch: z.infer<typeof transactionUpdate> }) => {
+    const { data, error } = await apiClient.PUT("/api/v1/transactions/{id}", {
+      params: { path: { id } as never },
+      body: patch as never,
+      headers: AUTH_HEADERS,
+    });
+    return unwrap(data, error);
+  },
 };
 
 export const deleteTransactionTool = {
   name: "delete_transaction",
   description: "Delete a transaction by ID. Requires IWMM_API_KEY.",
   inputSchema: z.object({ id: z.number().int().min(1) }),
-  handler: ({ id }: { id: number }) =>
-    apiFetch({ path: `/api/v1/transactions/${id}`, method: "DELETE", authenticated: true }),
+  handler: async ({ id }: { id: number }) => {
+    const { data, error } = await apiClient.DELETE("/api/v1/transactions/{id}", {
+      params: { path: { id } as never },
+      headers: AUTH_HEADERS,
+    });
+    return unwrap(data, error);
+  },
 };
 
 export const getCostBasisTool = {
@@ -88,11 +105,22 @@ export const getCostBasisTool = {
     .refine((v) => !!v.cardId || (!!v.setCode && !!v.setNumber), {
       message: "Provide either cardId, or both setCode and setNumber.",
     }),
-  handler: (input: { cardId?: string; setCode?: string; setNumber?: string; isFoil: boolean }) => {
-    const query = { isFoil: input.isFoil };
-    const path = input.cardId
-      ? `/api/v1/transactions/cost-basis/${encodeURIComponent(input.cardId)}`
-      : `/api/v1/transactions/cost-basis/${encodeURIComponent(input.setCode!)}/${encodeURIComponent(input.setNumber!)}`;
-    return apiFetch({ path, query, authenticated: true });
+  handler: async (input: { cardId?: string; setCode?: string; setNumber?: string; isFoil: boolean }) => {
+    const query = { isFoil: input.isFoil } as never;
+    if (input.cardId) {
+      const { data, error } = await apiClient.GET("/api/v1/transactions/cost-basis/{cardId}", {
+        params: { path: { cardId: input.cardId }, query },
+        headers: AUTH_HEADERS,
+      });
+      return unwrap(data, error);
+    }
+    const { data, error } = await apiClient.GET(
+      "/api/v1/transactions/cost-basis/{setCode}/{setNumber}",
+      {
+        params: { path: { setCode: input.setCode!, setNumber: input.setNumber! }, query },
+        headers: AUTH_HEADERS,
+      },
+    );
+    return unwrap(data, error);
   },
 };

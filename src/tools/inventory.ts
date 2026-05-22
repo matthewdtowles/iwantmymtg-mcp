@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { apiFetch } from "../api-client.js";
+import { apiClient, AUTH_HEADERS, unwrap } from "../api-client.js";
 
 const inventoryItem = z.object({
   cardId: z.string().uuid().describe("Internal IWMM card UUID. Get from search_cards or get_card."),
@@ -15,12 +15,13 @@ export const listInventoryTool = {
     page: z.number().int().min(1).optional(),
     limit: z.number().int().min(1).max(100).optional(),
   }),
-  handler: (input: Record<string, unknown>) =>
-    apiFetch({
-      path: "/api/v1/inventory",
-      query: input as Record<string, string | number | undefined>,
-      authenticated: true,
-    }),
+  handler: async (input: Record<string, unknown>) => {
+    const { data, error } = await apiClient.GET("/api/v1/inventory", {
+      params: { query: input as never },
+      headers: AUTH_HEADERS,
+    });
+    return unwrap(data, error);
+  },
 };
 
 export const addInventoryTool = {
@@ -28,8 +29,13 @@ export const addInventoryTool = {
   description:
     "Add one or more cards to the authenticated user's inventory. Accepts a batch - pass a single-item array for one card. This is a real write. Use update_inventory to change quantities, remove_inventory to delete a row. Requires IWMM_API_KEY.",
   inputSchema: z.object({ items: z.array(inventoryItem).min(1) }),
-  handler: (input: { items: z.infer<typeof inventoryItem>[] }) =>
-    apiFetch({ path: "/api/v1/inventory", method: "POST", body: input.items, authenticated: true }),
+  handler: async (input: { items: z.infer<typeof inventoryItem>[] }) => {
+    const { data, error } = await apiClient.POST("/api/v1/inventory", {
+      body: input.items as never,
+      headers: AUTH_HEADERS,
+    });
+    return unwrap(data, error);
+  },
 };
 
 export const updateInventoryTool = {
@@ -37,8 +43,13 @@ export const updateInventoryTool = {
   description:
     "Update quantities for one or more existing inventory rows. Accepts a batch. Use remove_inventory to delete a row entirely. Requires IWMM_API_KEY.",
   inputSchema: z.object({ items: z.array(inventoryItem).min(1) }),
-  handler: (input: { items: z.infer<typeof inventoryItem>[] }) =>
-    apiFetch({ path: "/api/v1/inventory", method: "PATCH", body: input.items, authenticated: true }),
+  handler: async (input: { items: z.infer<typeof inventoryItem>[] }) => {
+    const { data, error } = await apiClient.PATCH("/api/v1/inventory", {
+      body: input.items as never,
+      headers: AUTH_HEADERS,
+    });
+    return unwrap(data, error);
+  },
 };
 
 export const removeInventoryTool = {
@@ -48,8 +59,13 @@ export const removeInventoryTool = {
     cardId: z.string().uuid(),
     isFoil: z.boolean(),
   }),
-  handler: (input: { cardId: string; isFoil: boolean }) =>
-    apiFetch({ path: "/api/v1/inventory", method: "DELETE", body: input, authenticated: true }),
+  handler: async (input: { cardId: string; isFoil: boolean }) => {
+    const { data, error } = await apiClient.DELETE("/api/v1/inventory", {
+      body: input as never,
+      headers: AUTH_HEADERS,
+    });
+    return unwrap(data, error);
+  },
 };
 
 export const getInventoryQuantitiesTool = {
@@ -59,10 +75,11 @@ export const getInventoryQuantitiesTool = {
   inputSchema: z.object({
     cardIds: z.array(z.string().uuid()).min(1).max(200),
   }),
-  handler: ({ cardIds }: { cardIds: string[] }) =>
-    apiFetch({
-      path: "/api/v1/inventory/quantities",
-      query: { cardIds: cardIds.join(",") },
-      authenticated: true,
-    }),
+  handler: async ({ cardIds }: { cardIds: string[] }) => {
+    const { data, error } = await apiClient.GET("/api/v1/inventory/quantities", {
+      params: { query: { cardIds: cardIds.join(",") } as never },
+      headers: AUTH_HEADERS,
+    });
+    return unwrap(data, error);
+  },
 };

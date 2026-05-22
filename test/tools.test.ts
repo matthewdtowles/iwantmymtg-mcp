@@ -8,10 +8,22 @@ type FetchCall = { url: string; init: RequestInit };
 let calls: FetchCall[];
 const originalFetch = globalThis.fetch;
 
+async function captureFetch(input: RequestInfo | URL, init?: RequestInit): Promise<FetchCall> {
+  // openapi-fetch passes a single Request; the body lives on the Request itself.
+  if (input instanceof Request) {
+    const body = input.body ? await input.clone().text() : undefined;
+    return {
+      url: input.url,
+      init: { method: input.method, headers: input.headers, body },
+    };
+  }
+  return { url: String(input), init: init ?? {} };
+}
+
 function setup() {
   calls = [];
   globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
-    calls.push({ url: String(input), init: init ?? {} });
+    calls.push(await captureFetch(input, init));
     return new Response(JSON.stringify({ ok: true }), {
       status: 200,
       headers: { "content-type": "application/json" },
@@ -169,9 +181,9 @@ describe("transaction tools", () => {
     assert.equal(r.body, JSON.stringify(input));
   });
 
-  it("update_transaction: PATCH /api/v1/transactions/{id} with patch body", async () => {
+  it("update_transaction: PUT /api/v1/transactions/{id} with patch body", async () => {
     const r = await call("update_transaction", { id: 42, patch: { quantity: 3 } });
-    assert.equal(r.method, "PATCH");
+    assert.equal(r.method, "PUT");
     assert.equal(r.url.pathname, "/api/v1/transactions/42");
     assert.equal(r.body, JSON.stringify({ quantity: 3 }));
   });
@@ -251,16 +263,16 @@ describe("price alert tools", () => {
   });
 
   it("update_price_alert: PATCH /api/v1/price-alerts/{id} with patch body excluding id", async () => {
-    const r = await call("update_price_alert", { id: "alert-1", isActive: false });
+    const r = await call("update_price_alert", { id: 1, isActive: false });
     assert.equal(r.method, "PATCH");
-    assert.equal(r.url.pathname, "/api/v1/price-alerts/alert-1");
+    assert.equal(r.url.pathname, "/api/v1/price-alerts/1");
     assert.equal(r.body, JSON.stringify({ isActive: false }));
   });
 
   it("delete_price_alert: DELETE /api/v1/price-alerts/{id}", async () => {
-    const r = await call("delete_price_alert", { id: "alert-1" });
+    const r = await call("delete_price_alert", { id: 1 });
     assert.equal(r.method, "DELETE");
-    assert.equal(r.url.pathname, "/api/v1/price-alerts/alert-1");
+    assert.equal(r.url.pathname, "/api/v1/price-alerts/1");
   });
 });
 
@@ -276,9 +288,9 @@ describe("notification tools", () => {
   });
 
   it("mark_notification_read: PATCH /api/v1/notifications/{id}/read", async () => {
-    const r = await call("mark_notification_read", { id: "n-1" });
+    const r = await call("mark_notification_read", { id: 1 });
     assert.equal(r.method, "PATCH");
-    assert.equal(r.url.pathname, "/api/v1/notifications/n-1/read");
+    assert.equal(r.url.pathname, "/api/v1/notifications/1/read");
   });
 
   it("mark_all_notifications_read: PATCH /api/v1/notifications/read-all", async () => {

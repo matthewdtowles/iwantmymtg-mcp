@@ -1,12 +1,9 @@
-import { config } from "./config.js";
+import createClient, { type Middleware } from "openapi-fetch";
+import { config, requireApiKey } from "./config.js";
+import type { paths } from "./generated/api-types.js";
+import { VERSION } from "./version.js";
 
-export interface ApiRequest {
-  path: string;
-  method?: "GET" | "POST" | "PATCH" | "DELETE";
-  query?: Record<string, string | number | boolean | undefined>;
-  body?: unknown;
-  authenticated?: boolean;
-}
+const USER_AGENT = `iwantmymtg-mcp/${VERSION}`;
 
 export class ApiError extends Error {
   constructor(
@@ -23,45 +20,59 @@ export class ApiError extends Error {
   }
 }
 
-export async function apiFetch<T = unknown>(req: ApiRequest): Promise<T> {
-  const url = new URL(req.path, config.baseUrl);
-  if (req.query) {
-    for (const [k, v] of Object.entries(req.query)) {
-      if (v !== undefined && v !== null && v !== "") {
-        url.searchParams.set(k, String(v));
-      }
+const authMiddleware: Middleware = {
+  async onRequest({ request }) {
+    request.headers.set("User-Agent", USER_AGENT);
+    request.headers.set("Accept", "application/json");
+    // Tools opt in by setting `X-IWMM-Auth: required` via init.headers
+    if (request.headers.get("X-IWMM-Auth") === "required") {
+      request.headers.delete("X-IWMM-Auth");
+      request.headers.set("Authorization", `Bearer ${requireApiKey()}`);
     }
-  }
+    return request;
+  },
+  async onResponse({ response }) {
+    if (!response.ok) {
+      const text = await response.clone().text();
+      throw new ApiError(response.status, text, {
+        limit: response.headers.get("X-RateLimit-Limit") ?? undefined,
+        remaining: response.headers.get("X-RateLimit-Remaining") ?? undefined,
+        reset: response.headers.get("X-RateLimit-Reset") ?? undefined,
+      });
+    }
+    return response;
+  },
+};
 
-  const headers: Record<string, string> = {
-    Accept: "application/json",
-    "User-Agent": "iwantmymtg-mcp/0.2.0",
-  };
+type ApiClient = ReturnType<typeof createClient<paths>>;
 
-  if (req.authenticated) {
-    const { requireApiKey } = await import("./config.js");
-    headers["Authorization"] = `Bearer ${requireApiKey()}`;
-  }
-
-  if (req.body !== undefined) {
-    headers["Content-Type"] = "application/json";
-  }
-
-  const res = await fetch(url, {
-    method: req.method ?? "GET",
-    headers,
-    body: req.body !== undefined ? JSON.stringify(req.body) : undefined,
+// Lazy so tests can stub `globalThis.fetch` after module load, and so config
+// changes (baseUrl, etc.) are picked up at call time.
+function buildClient(): ApiClient {
+  const client = createClient<paths>({
+    baseUrl: config.baseUrl,
+    fetch: (...args) => globalThis.fetch(...args),
   });
+  client.use(authMiddleware);
+  return client;
+}
 
-  if (!res.ok) {
-    const text = await res.text();
-    throw new ApiError(res.status, text, {
-      limit: res.headers.get("X-RateLimit-Limit") ?? undefined,
-      remaining: res.headers.get("X-RateLimit-Remaining") ?? undefined,
-      reset: res.headers.get("X-RateLimit-Reset") ?? undefined,
-    });
-  }
+export const apiClient: ApiClient = new Proxy({} as ApiClient, {
+  get(_, prop) {
+    const client = buildClient();
+    return Reflect.get(client, prop);
+  },
+});
 
-  if (res.status === 204) return undefined as T;
-  return (await res.json()) as T;
+/** Header sentinel that the auth middleware swaps for a Bearer token. */
+export const AUTH_HEADERS = { "X-IWMM-Auth": "required" } as const;
+
+/**
+ * Unwrap an openapi-fetch `{ data, error }` result. HTTP failures are already
+ * thrown as `ApiError` by the response middleware, so `error` here only carries
+ * non-HTTP failures (e.g. network errors).
+ */
+export function unwrap<T>(data: T | undefined, error: unknown): T {
+  if (error) throw error instanceof Error ? error : new Error(String(error));
+  return data as T;
 }
