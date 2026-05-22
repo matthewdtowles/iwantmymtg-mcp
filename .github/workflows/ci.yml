@@ -18,3 +18,37 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: npm test
+
+  release:
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
+    steps:
+      - uses: actions/checkout@v4
+      - id: check
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          if git ls-remote --tags origin "refs/tags/v$VERSION" | grep -q .; then
+            echo "Tag v$VERSION already exists; skipping release."
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Create tag and GitHub release
+        if: steps.check.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "v${{ steps.check.outputs.version }}" \
+            --target "$GITHUB_SHA" \
+            --title "v${{ steps.check.outputs.version }}" \
+            --generate-notes
+      - name: Dispatch publish workflow
+        if: steps.check.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run publish.yml --ref "v${{ steps.check.outputs.version }}"
