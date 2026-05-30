@@ -4,6 +4,8 @@ An [MCP](https://modelcontextprotocol.io) server for [I Want My MTG](https://iwa
 
 > Status: v0 scaffold. The set of tools below is the v1 surface; coverage will expand to match the API.
 
+![Demo: Claude Code answering four collection queries via the iwmm MCP server](assets/four-queries-demo.gif)
+
 ## What you can do
 
 - **Anonymous (no key):** search cards, look up a card by set+number, get current prices and 30-day price history, list sets and their cards, list sealed products.
