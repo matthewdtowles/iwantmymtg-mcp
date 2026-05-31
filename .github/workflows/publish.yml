@@ -55,3 +55,19 @@ jobs:
         run: ./mcp-publisher login github-oidc
       - name: Publish to MCP Registry
         run: ./mcp-publisher publish
+
+      # --- Publish the local bundle to Smithery (optional, non-blocking).
+      # Runs last and continue-on-error so a Smithery hiccup never fails a
+      # release where the irreversible npm publish already succeeded. Skips
+      # cleanly when SMITHERY_API_KEY is not set. ---
+      - name: Publish to Smithery
+        continue-on-error: true
+        env:
+          SMITHERY_API_KEY: ${{ secrets.SMITHERY_API_KEY }}
+        run: |
+          if [ -z "$SMITHERY_API_KEY" ]; then
+            echo "SMITHERY_API_KEY not set; skipping Smithery publish."
+            exit 0
+          fi
+          npm run bundle
+          npx -y @smithery/cli mcp publish ./iwantmymtg-mcp.mcpb -n matthewdtowles/iwantmymtg-mcp
