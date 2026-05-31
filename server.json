@@ -1,0 +1,29 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.matthewdtowles/iwantmymtg-mcp",
+  "description": "Query Magic: The Gathering cards, sets, and prices and manage your I Want My MTG collection.",
+  "repository": {
+    "url": "https://github.com/matthewdtowles/iwantmymtg-mcp",
+    "source": "github"
+  },
+  "version": "0.3.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "iwantmymtg-mcp",
+      "version": "0.3.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "IWMM_API_KEY",
+          "description": "Personal IWMM API key (iwm_live_...). Optional; required only for the inventory, transaction, portfolio, and price-alert tools.",
+          "isRequired": false,
+          "isSecret": true,
+          "format": "string"
+        }
+      ]
+    }
+  ]
+}
