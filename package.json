@@ -18,7 +18,8 @@
     "start": "node dist/index.js",
     "dev": "tsc --watch",
     "test": "node --test --import tsx test/*.test.ts",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "bundle": "bash scripts/build-mcpb.sh"
   },
   "engines": {
     "node": ">=20"
