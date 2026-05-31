@@ -1,0 +1,20 @@
+# Smithery configuration file: https://smithery.ai/docs/config#smitheryyaml
+
+startCommand:
+  type: stdio
+  configSchema:
+    # JSON Schema defining the configuration options for the MCP server.
+    type: object
+    required: []
+    properties:
+      iwmmApiKey:
+        type: string
+        description: >-
+          Your I Want My MTG API key (starts with iwm_live_). Optional:
+          read-only card, set, and price tools work without it. Required only
+          for the inventory, transaction, portfolio, and price-alert tools.
+          Create one at https://iwantmymtg.net/user/api-keys.
+  commandFunction:
+    # A function that produces the CLI command to start the MCP server on stdio.
+    |-
+    (config) => ({ command: 'npx', args: ['-y', 'iwantmymtg-mcp'], env: config.iwmmApiKey ? { IWMM_API_KEY: config.iwmmApiKey } : {} })
