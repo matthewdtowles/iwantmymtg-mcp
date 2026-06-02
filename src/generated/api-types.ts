@@ -263,6 +263,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/inventory/import/cards": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import inventory cards from CSV
+         * @description Upload a CSV of inventory rows. Auto-detects native IWMM, Moxfield, Archidekt, Deckbox, or TCGPlayer (app + seller) formats. Returns counts of saved/deleted/skipped rows and per-row errors.
+         */
+        post: operations["importInventoryCards"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/inventory/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export inventory as CSV
+         * @description Returns the authenticated user's full inventory as CSV (columns: id, name, set_code, number, quantity, foil). Reimport-compatible with POST /api/v1/inventory/import/cards.
+         */
+        get: operations["exportInventory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/portfolio": {
         parameters: {
             query?: never;
@@ -783,6 +823,23 @@ export interface components {
             /** @enum {string} */
             plan: "monthly" | "annual";
         };
+        InventoryImportResponseDto: {
+            /** @description Number of inventory rows saved (created or updated to exact qty) */
+            saved: number;
+            /** @description Number of inventory rows deleted (qty=0 in input) */
+            deleted: number;
+            /** @description Number of rows skipped because a record already existed (no-qty input) */
+            skipped: number;
+            /** @description Total number of row errors */
+            errorCount: number;
+            /** @description Per-row errors. Each entry includes the 1-indexed CSV row and a message. */
+            errors: unknown[][];
+            /**
+             * @description Auto-detected source format of the uploaded CSV
+             * @enum {string}
+             */
+            detectedFormat?: "native" | "archidekt" | "moxfield" | "deckbox" | "tcgplayer";
+        };
         CreatePriceAlertDto: Record<string, never>;
         UpdatePriceAlertDto: Record<string, never>;
         SealedInventoryRequestDto: {
@@ -1237,6 +1294,61 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description Inventory quantities by card ID */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    importInventoryCards: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /**
+                     * Format: binary
+                     * @description CSV file (max 2 MB)
+                     */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Import result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InventoryImportResponseDto"];
+                };
+            };
+            /** @description Missing or invalid CSV file */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    exportInventory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description CSV body */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -1866,6 +1978,7 @@ export interface operations {
     TransactionApiController_findAll: {
         parameters: {
             query?: {
+                type?: "BUY" | "SELL";
                 filter?: unknown;
                 ascend?: unknown;
                 sort?: unknown;
