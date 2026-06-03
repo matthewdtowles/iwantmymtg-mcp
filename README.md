@@ -1,5 +1,7 @@
 # iwantmymtg-mcp
 
+[![smithery badge](https://smithery.ai/badge/matthewdtowles/iwantmymtg-mcp)](https://smithery.ai/servers/matthewdtowles/iwantmymtg-mcp)
+
 An [MCP](https://modelcontextprotocol.io) server for [I Want My MTG](https://iwantmymtg.net). Exposes IWMM's API as tools so Claude Desktop, Claude Code, Cursor, and other MCP clients can search Magic: The Gathering cards/sets and manage a user's collection conversationally.
 
 > Status: v0 scaffold. The set of tools below is the v1 surface; coverage will expand to match the API.
