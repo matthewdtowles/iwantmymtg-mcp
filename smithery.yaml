@@ -9,6 +9,7 @@ startCommand:
     properties:
       iwmmApiKey:
         type: string
+        title: I Want My MTG API key
         description: >-
           Your I Want My MTG API key (starts with iwm_live_). Optional:
           read-only card, set, and price tools work without it. Required only
