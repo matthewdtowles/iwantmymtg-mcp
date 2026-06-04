@@ -1,5 +1,7 @@
 # iwantmymtg-mcp
 
+[![npm version](https://img.shields.io/npm/v/iwantmymtg-mcp)](https://www.npmjs.com/package/iwantmymtg-mcp)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![smithery badge](https://smithery.ai/badge/matthewdtowles/iwantmymtg-mcp)](https://smithery.ai/servers/matthewdtowles/iwantmymtg-mcp)
 
 An [MCP](https://modelcontextprotocol.io) server for [I Want My MTG](https://iwantmymtg.net). Exposes IWMM's API as tools so Claude Desktop, Claude Code, Cursor, and other MCP clients can search Magic: The Gathering cards/sets and manage a user's collection conversationally.
@@ -117,4 +119,4 @@ npx tsx src/index.ts
 
 ## License
 
-MIT
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
