@@ -299,3 +299,30 @@ describe("notification tools", () => {
     assert.equal(r.url.pathname, "/api/v1/notifications/read-all");
   });
 });
+
+describe("sell tools", () => {
+  it("get_card_buylist: GET /api/v1/cards/{setCode}/{number}/buylist, no auth", async () => {
+    const r = await call("get_card_buylist", { setCode: "lea", setNumber: "161" });
+    assert.equal(r.url.pathname, "/api/v1/cards/lea/161/buylist");
+    assert.equal(r.method, "GET");
+    assert.equal(r.headers.has("Authorization"), false);
+  });
+
+  it("get_market_sell_value: GET /api/v1/inventory/sell with auth", async () => {
+    const r = await call("get_market_sell_value", {});
+    assert.equal(r.url.pathname, "/api/v1/inventory/sell");
+    assert.equal(r.headers.get("Authorization"), "Bearer iwm_live_test");
+  });
+
+  it("get_cash_vs_credit: GET /api/v1/optimizer with auth, default has no bonus param", async () => {
+    const r = await call("get_cash_vs_credit", {});
+    assert.equal(r.url.pathname, "/api/v1/optimizer");
+    assert.equal(r.url.searchParams.has("bonus"), false);
+    assert.equal(r.headers.get("Authorization"), "Bearer iwm_live_test");
+  });
+
+  it("get_cash_vs_credit: serializes the bonus fraction as a query param", async () => {
+    const r = await call("get_cash_vs_credit", { bonus: 0.5 });
+    assert.equal(r.url.searchParams.get("bonus"), "0.5");
+  });
+});

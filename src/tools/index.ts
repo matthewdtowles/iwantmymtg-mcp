@@ -37,6 +37,11 @@ import {
   markNotificationReadTool,
   markAllNotificationsReadTool,
 } from "./notifications.js";
+import {
+  getCardBuylistTool,
+  getMarketSellValueTool,
+  getCashVsCreditTool,
+} from "./sell-tools.js";
 
 export interface ToolDefinition {
   name: string;
@@ -55,6 +60,10 @@ export const tools: ToolDefinition[] = [
   getSetTool,
   listSetCardsTool,
   getSealedProductsTool,
+  getCardBuylistTool,
+  // Sell tools (auth)
+  getMarketSellValueTool,
+  getCashVsCreditTool,
   // Inventory (auth)
   listInventoryTool,
   getInventoryQuantitiesTool,
