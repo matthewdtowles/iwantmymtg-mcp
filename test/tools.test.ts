@@ -299,3 +299,79 @@ describe("notification tools", () => {
     assert.equal(r.url.pathname, "/api/v1/notifications/read-all");
   });
 });
+
+describe("sell tools", () => {
+  it("get_card_buylist: GET /api/v1/cards/{setCode}/{number}/buylist, no auth", async () => {
+    const r = await call("get_card_buylist", { setCode: "lea", setNumber: "161" });
+    assert.equal(r.url.pathname, "/api/v1/cards/lea/161/buylist");
+    assert.equal(r.method, "GET");
+    assert.equal(r.headers.has("Authorization"), false);
+  });
+
+  it("get_market_sell_value: GET /api/v1/inventory/sell with auth", async () => {
+    const r = await call("get_market_sell_value", {});
+    assert.equal(r.url.pathname, "/api/v1/inventory/sell");
+    assert.equal(r.headers.get("Authorization"), "Bearer iwm_live_test");
+  });
+
+  it("get_cash_vs_credit: GET /api/v1/optimizer with auth, default has no bonus param", async () => {
+    const r = await call("get_cash_vs_credit", {});
+    assert.equal(r.url.pathname, "/api/v1/optimizer");
+    assert.equal(r.url.searchParams.has("bonus"), false);
+    assert.equal(r.headers.get("Authorization"), "Bearer iwm_live_test");
+  });
+
+  it("get_cash_vs_credit: serializes the bonus fraction as a query param", async () => {
+    const r = await call("get_cash_vs_credit", { bonus: 0.5 });
+    assert.equal(r.url.searchParams.get("bonus"), "0.5");
+  });
+});
+
+describe("buy-list tools", () => {
+  it("list_buy_list: GET /api/v1/buy-list with auth", async () => {
+    const r = await call("list_buy_list", {});
+    assert.equal(r.url.pathname, "/api/v1/buy-list");
+    assert.equal(r.method, "GET");
+    assert.equal(r.headers.get("Authorization"), "Bearer iwm_live_test");
+  });
+
+  it("add_buy_list: POST /api/v1/buy-list, defaulting isFoil/quantity", async () => {
+    const r = await call("add_buy_list", { cardId: "abc" });
+    assert.equal(r.method, "POST");
+    assert.equal(r.url.pathname, "/api/v1/buy-list");
+    assert.deepEqual(JSON.parse(r.body as string), {
+      cardId: "abc",
+      isFoil: false,
+      quantity: 1,
+    });
+    assert.equal(r.headers.get("Authorization"), "Bearer iwm_live_test");
+  });
+
+  it("update_buy_list: PATCH /api/v1/buy-list with the absolute quantity", async () => {
+    const r = await call("update_buy_list", { cardId: "abc", isFoil: true, quantity: 0 });
+    assert.equal(r.method, "PATCH");
+    assert.equal(r.url.pathname, "/api/v1/buy-list");
+    assert.deepEqual(JSON.parse(r.body as string), {
+      cardId: "abc",
+      isFoil: true,
+      quantity: 0,
+    });
+    assert.equal(r.headers.get("Authorization"), "Bearer iwm_live_test");
+  });
+
+  it("remove_buy_list: DELETE /api/v1/buy-list", async () => {
+    const r = await call("remove_buy_list", { cardId: "abc" });
+    assert.equal(r.method, "DELETE");
+    assert.equal(r.url.pathname, "/api/v1/buy-list");
+    assert.deepEqual(JSON.parse(r.body as string), { cardId: "abc", isFoil: false });
+    assert.equal(r.headers.get("Authorization"), "Bearer iwm_live_test");
+  });
+
+  it("import_buy_list: POST /api/v1/buy-list/import with the CSV text", async () => {
+    const r = await call("import_buy_list", { text: "name\nLightning Bolt" });
+    assert.equal(r.method, "POST");
+    assert.equal(r.url.pathname, "/api/v1/buy-list/import");
+    assert.deepEqual(JSON.parse(r.body as string), { text: "name\nLightning Bolt" });
+    assert.equal(r.headers.get("Authorization"), "Bearer iwm_live_test");
+  });
+});

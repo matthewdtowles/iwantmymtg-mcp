@@ -124,6 +124,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/buy-list": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the authenticated user's buy-list */
+        get: operations["BuyListApiController_list"];
+        put?: never;
+        /** Add a card to the buy-list (increments quantity) */
+        post: operations["BuyListApiController_add"];
+        /** Remove a card from the buy-list */
+        delete: operations["BuyListApiController_remove"];
+        options?: never;
+        head?: never;
+        /** Set the absolute quantity for a buy-list item (0 removes it) */
+        patch: operations["BuyListApiController_setQuantity"];
+        trace?: never;
+    };
+    "/api/v1/buy-list/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Bulk-add cards to the buy-list from pasted CSV text
+         * @description Paste CSV rows with a header (name,set_code,number[,quantity][,foil]) — the same native format as inventory import; external exports (Moxfield, Archidekt, Deckbox, TCGPlayer) are auto-detected. Returns counts and per-row errors.
+         */
+        post: operations["BuyListApiController_import"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/cards": {
         parameters: {
             query?: never;
@@ -158,6 +198,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/cards/{cardId}/buylist": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get current buylist (sell-to-vendor) offers for a card by ID */
+        get: operations["getCardBuylist"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/cards/{cardId}/price-history": {
         parameters: {
             query?: never;
@@ -184,6 +241,23 @@ export interface paths {
         };
         /** Get current prices for a card by set code and number */
         get: operations["getCardPricesBySetAndNumber"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/cards/{setCode}/{setNumber}/buylist": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get current buylist offers for a card by set code and number */
+        get: operations["getCardBuylistBySetAndNumber"];
         put?: never;
         post?: never;
         delete?: never;
@@ -246,6 +320,26 @@ export interface paths {
         patch: operations["InventoryApiController_update"];
         trace?: never;
     };
+    "/api/v1/inventory/sell": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Market sell value of the user's inventory (best buylist offer per item)
+         * @description Matches every owned card against current buylist offers, picks the best NM offer per item (qty-capped), groups by vendor, and totals it. Mirrors the /inventory/sell page.
+         */
+        get: operations["InventoryApiController_sellPlan"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/inventory/quantities": {
         parameters: {
             query?: never;
@@ -295,6 +389,26 @@ export interface paths {
          * @description Returns the authenticated user's full inventory as CSV (columns: id, name, set_code, number, quantity, foil). Reimport-compatible with POST /api/v1/inventory/import/cards.
          */
         get: operations["exportInventory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/optimizer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Cash vs. store-credit recommendation for the sell list vs. the buy list
+         * @description Compares the buylist cash payout against store credit (worth a bonus %) applied to the buy list. Mirrors the /optimizer page.
+         */
+        get: operations["getOptimizer"];
         put?: never;
         post?: never;
         delete?: never;
@@ -823,6 +937,53 @@ export interface components {
             /** @enum {string} */
             plan: "monthly" | "annual";
         };
+        BuyListAddApiDto: {
+            cardId: string;
+            /** @default false */
+            isFoil: boolean;
+            /** @default 1 */
+            quantity: number;
+        };
+        BuyListSetQuantityApiDto: {
+            cardId: string;
+            /** @default false */
+            isFoil: boolean;
+            quantity: number;
+        };
+        BuyListRemoveApiDto: {
+            cardId: string;
+            /** @default false */
+            isFoil: boolean;
+        };
+        BuyListImportApiDto: {
+            /** @description Pasted CSV with a header row (native: name,set_code,number,quantity,foil). External exports (Moxfield, Archidekt, Deckbox, TCGPlayer) are auto-detected. */
+            text: string;
+        };
+        BuyListImportResponseDto: {
+            saved: number;
+            errors: string[];
+        };
+        QueryValidationErrorDto: {
+            /** @example false */
+            success: boolean;
+            /** @example Invalid value 'foobar' for query parameter 'rarity'. Allowed values: common, uncommon, rare, mythic. */
+            error: string;
+            /**
+             * @description The offending query parameter.
+             * @example rarity
+             */
+            param: string;
+            /**
+             * @description Accepted values, present when the parameter is an enumerated filter.
+             * @example [
+             *       "common",
+             *       "uncommon",
+             *       "rare",
+             *       "mythic"
+             *     ]
+             */
+            allowedValues?: string[];
+        };
         InventoryImportResponseDto: {
             /** @description Number of inventory rows saved (created or updated to exact qty) */
             saved: number;
@@ -1030,11 +1191,124 @@ export interface operations {
             };
         };
     };
+    BuyListApiController_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Buy-list items */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    BuyListApiController_add: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BuyListAddApiDto"];
+            };
+        };
+        responses: {
+            /** @description Added */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    BuyListApiController_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BuyListRemoveApiDto"];
+            };
+        };
+        responses: {
+            /** @description Removed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    BuyListApiController_setQuantity: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BuyListSetQuantityApiDto"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    BuyListApiController_import: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BuyListImportApiDto"];
+            };
+        };
+        responses: {
+            /** @description Import result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BuyListImportResponseDto"];
+                };
+            };
+            /** @description Invalid CSV text */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     searchCards: {
         parameters: {
             query?: {
-                ascend?: unknown;
-                sort?: unknown;
                 limit?: unknown;
                 page?: unknown;
                 /** @description Legality status; only meaningful with format. Defaults to "legal". */
@@ -1056,12 +1330,21 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Search results */
+            /** @description Search results (ordered by card name) */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Invalid filter value (unknown rarity/format/legality, malformed setCode, or legality without format) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QueryValidationErrorDto"];
+                };
             };
         };
     };
@@ -1077,6 +1360,26 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description Card prices */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getCardBuylist: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cardId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Buylist offers grouped by finish (NM, best first) */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -1121,6 +1424,34 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description Card prices */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Card not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getCardBuylistBySetAndNumber: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                setCode: string;
+                setNumber: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Buylist offers grouped by finish (NM, best first) */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -1217,6 +1548,15 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description Invalid sort value */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QueryValidationErrorDto"];
+                };
+            };
         };
     };
     InventoryApiController_create: {
@@ -1273,6 +1613,24 @@ export interface operations {
         };
         responses: {
             /** @description Items updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    InventoryApiController_sellPlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Market sell value plan */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -1349,6 +1707,27 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description CSV body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getOptimizer: {
+        parameters: {
+            query?: {
+                /** @description Store-credit bonus as a fraction (0.30 = +30%). Clamped to [0, 2]; default 0.30. */
+                bonus?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cash-vs-credit plan */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -1886,6 +2265,15 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description Invalid sort value */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QueryValidationErrorDto"];
+                };
+            };
         };
     };
     getSet: {
@@ -1950,6 +2338,15 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description Invalid filter value (unknown rarity/format/legality/sort) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QueryValidationErrorDto"];
+                };
+            };
         };
     };
     getSetPriceHistory: {
@@ -1997,6 +2394,15 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Invalid sort value or transaction type */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QueryValidationErrorDto"];
+                };
             };
         };
     };
