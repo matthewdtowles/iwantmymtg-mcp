@@ -350,17 +350,21 @@ describe("buy-list tools", () => {
   it("update_buy_list: PATCH /api/v1/buy-list with the absolute quantity", async () => {
     const r = await call("update_buy_list", { cardId: "abc", isFoil: true, quantity: 0 });
     assert.equal(r.method, "PATCH");
+    assert.equal(r.url.pathname, "/api/v1/buy-list");
     assert.deepEqual(JSON.parse(r.body as string), {
       cardId: "abc",
       isFoil: true,
       quantity: 0,
     });
+    assert.equal(r.headers.get("Authorization"), "Bearer iwm_live_test");
   });
 
   it("remove_buy_list: DELETE /api/v1/buy-list", async () => {
     const r = await call("remove_buy_list", { cardId: "abc" });
     assert.equal(r.method, "DELETE");
+    assert.equal(r.url.pathname, "/api/v1/buy-list");
     assert.deepEqual(JSON.parse(r.body as string), { cardId: "abc", isFoil: false });
+    assert.equal(r.headers.get("Authorization"), "Bearer iwm_live_test");
   });
 
   it("import_buy_list: POST /api/v1/buy-list/import with the CSV text", async () => {
@@ -368,5 +372,6 @@ describe("buy-list tools", () => {
     assert.equal(r.method, "POST");
     assert.equal(r.url.pathname, "/api/v1/buy-list/import");
     assert.deepEqual(JSON.parse(r.body as string), { text: "name\nLightning Bolt" });
+    assert.equal(r.headers.get("Authorization"), "Bearer iwm_live_test");
   });
 });

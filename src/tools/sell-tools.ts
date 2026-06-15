@@ -50,7 +50,7 @@ export const getCashVsCreditTool = {
       .max(2)
       .optional()
       .describe(
-        "Store-credit bonus as a fraction (0.30 = +30%). Clamped to [0, 2]; defaults to 0.30 (Card Kingdom).",
+        "Store-credit bonus as a fraction (0.30 = +30%). Must be in [0, 2]; defaults to 0.30 (Card Kingdom).",
       ),
   }),
   handler: async (input: { bonus?: number }) => {
