@@ -12,10 +12,11 @@ An [MCP](https://modelcontextprotocol.io) server for [I Want My MTG](https://iwa
 
 ## What you can do
 
-- **Anonymous (no key):** search cards, look up a card by set+number, get current prices and 30-day price history, list sets and their cards, list sealed products.
-- **Authenticated (with an IWMM API key):** list and update your inventory.
+- **Anonymous (no key):** search cards, look up a card by set+number, get current prices and 30-day price history, get a card's buylist (sell-to-vendor) offers, list sets and their cards, list sealed products.
+- **Authenticated (with an IWMM API key):** manage your inventory and transactions; view portfolio summaries, history, performance, cash flow, realized gains, and breakdowns; manage price alerts and notifications.
+- **Sell tools (with a key):** see your collection's market sell value (best buylist offer per card, grouped by vendor), manage a buy-list (want-list), and get a cash-vs-store-credit recommendation for selling toward your buy list.
 
-More authenticated tools (transactions, portfolio breakdowns, price alerts, notifications) are coming - see the [project roadmap](https://github.com/matthewdtowles/i-want-my-mtg/blob/main/ROADMAP.md#43-mcp-server--agentic-ai-integration).
+See the [project roadmap](https://github.com/matthewdtowles/i-want-my-mtg/blob/main/ROADMAP.md#43-mcp-server--agentic-ai-integration) for what's next.
 
 ## Install
 
@@ -92,6 +93,8 @@ After saving, restart Cursor and confirm `iwmm` appears under **Settings -> Feat
 - "What's the price history of Bloodbraid Elf from Modern Horizons 3?"
 - "Add 4 copies of Lightning Bolt LEA to my inventory."
 - "What sealed products are available for MH3?"
+- "What's my collection worth to sell right now, and which vendor pays most?"
+- "Add these cards to my buy list, then tell me whether cash or store credit is the better deal."
 
 See [`examples/`](https://github.com/matthewdtowles/iwantmymtg-mcp/tree/main/examples) for walkthroughs of common flows (card lookup, inventory, transactions, portfolio insights, price alerts).
 
