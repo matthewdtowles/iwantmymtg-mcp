@@ -25,3 +25,25 @@ Requires `IWMM_API_KEY`. Create one at https://iwantmymtg.net/user/api-keys.
 > Remove my Bloodbraid Elf MH3 230 from inventory.
 
 `[tool: remove_inventory]`.
+
+## Import / export a CSV
+
+> Import my collection from this CSV: <pasted text>
+
+`[tool: import_inventory_cards]`. Native header is `name,set_code,number[,quantity][,foil]`; Moxfield, Archidekt, Deckbox, and TCGPlayer exports are auto-detected. Returns saved/deleted/skipped counts and per-row errors.
+
+> Export my whole inventory as CSV.
+
+`[tool: export_inventory]`. The output reimports cleanly via `import_inventory_cards`.
+
+## Sealed products (boxes, bundles, precons)
+
+Sealed inventory is tracked separately from loose cards, keyed by sealed product UUID (get one from `[tool: get_sealed_products]` for a set, or `[tool: get_sealed_product]` for detail).
+
+> How many sealed MH3 collector boxes do I own?
+
+`[tool: list_sealed_inventory]`.
+
+> Set my MH3 collector booster box count to 2.
+
+`[tool: set_sealed_inventory]` with the product UUID and `quantity: 2` (it sets the absolute quantity). Adding and updating both go through this tool. **Writes are Premium-gated.** Remove a product with `[tool: remove_sealed_inventory]`.

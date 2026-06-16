@@ -62,3 +62,35 @@ export const getSealedProductsTool = {
     return unwrap(data, error);
   },
 };
+
+export const getSetPriceHistoryTool = {
+  name: "get_set_price_history",
+  description:
+    "Get the price history for a whole set by set code - the set's aggregate value over time. Optionally limit the window with days. For a single card's history use get_card_price_history.",
+  inputSchema: z.object({
+    code: z.string().describe("Set code (e.g. 'mh3')."),
+    days: z.number().int().min(1).optional().describe("Number of days of history to return."),
+  }),
+  handler: async ({ code, days }: { code: string; days?: number }) => {
+    const query = days != null ? { days: String(days) } : undefined;
+    const { data, error } = await apiClient.GET("/api/v1/sets/{code}/price-history", {
+      params: { path: { code }, query },
+    });
+    return unwrap(data, error);
+  },
+};
+
+export const getSealedProductTool = {
+  name: "get_sealed_product",
+  description:
+    "Get detail for a single sealed product by its UUID, including current pricing and a TCGPlayer purchase URL. List a set's sealed products with get_sealed_products.",
+  inputSchema: z.object({
+    uuid: z.string().uuid().describe("Sealed product UUID, e.g. from get_sealed_products."),
+  }),
+  handler: async ({ uuid }: { uuid: string }) => {
+    const { data, error } = await apiClient.GET("/api/v1/sealed-products/{uuid}", {
+      params: { path: { uuid } },
+    });
+    return unwrap(data, error);
+  },
+};

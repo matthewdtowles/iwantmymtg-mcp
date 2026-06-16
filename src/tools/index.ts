@@ -1,14 +1,28 @@
 import type { z } from "zod";
 import { searchCardsTool } from "./search-cards.js";
 import { getCardTool, getCardPricesTool, getCardPriceHistoryTool } from "./get-card.js";
-import { searchSetsTool, getSetTool, listSetCardsTool, getSealedProductsTool } from "./sets.js";
+import {
+  searchSetsTool,
+  getSetTool,
+  listSetCardsTool,
+  getSealedProductsTool,
+  getSetPriceHistoryTool,
+  getSealedProductTool,
+} from "./sets.js";
 import {
   listInventoryTool,
   addInventoryTool,
   updateInventoryTool,
   removeInventoryTool,
   getInventoryQuantitiesTool,
+  importInventoryCardsTool,
+  exportInventoryTool,
 } from "./inventory.js";
+import {
+  listSealedInventoryTool,
+  setSealedInventoryTool,
+  removeSealedInventoryTool,
+} from "./sealed-inventory.js";
 import {
   listTransactionsTool,
   recordTransactionTool,
@@ -67,6 +81,8 @@ export const tools: ToolDefinition[] = [
   getSetTool,
   listSetCardsTool,
   getSealedProductsTool,
+  getSealedProductTool,
+  getSetPriceHistoryTool,
   getCardBuylistTool,
   // Sell tools (auth)
   getMarketSellValueTool,
@@ -83,6 +99,12 @@ export const tools: ToolDefinition[] = [
   addInventoryTool,
   updateInventoryTool,
   removeInventoryTool,
+  importInventoryCardsTool,
+  exportInventoryTool,
+  // Sealed-product inventory (auth; writes Premium)
+  listSealedInventoryTool,
+  setSealedInventoryTool,
+  removeSealedInventoryTool,
   // Transactions (auth)
   listTransactionsTool,
   recordTransactionTool,

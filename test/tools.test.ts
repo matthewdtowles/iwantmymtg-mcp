@@ -84,6 +84,8 @@ describe("tool registry", () => {
       "get_set",
       "list_set_cards",
       "get_sealed_products",
+      "get_sealed_product",
+      "get_set_price_history",
       "get_card_buylist",
     ]);
     for (const t of tools) {
@@ -400,6 +402,79 @@ describe("buy-list tools", () => {
     assert.equal(r.method, "POST");
     assert.equal(r.url.pathname, "/api/v1/buy-list/import");
     assert.deepEqual(JSON.parse(r.body as string), { text: "name\nLightning Bolt" });
+    assert.equal(r.headers.get("Authorization"), "Bearer iwm_live_test");
+  });
+});
+
+describe("sealed product read tools", () => {
+  it("get_sealed_product: GET /api/v1/sealed-products/{uuid}, no auth", async () => {
+    const uuid = "00000000-0000-0000-0000-000000000001";
+    const r = await call("get_sealed_product", { uuid });
+    assert.equal(r.url.pathname, `/api/v1/sealed-products/${uuid}`);
+    assert.equal(r.method, "GET");
+    assert.equal(r.headers.has("Authorization"), false);
+  });
+
+  it("get_set_price_history: GET /api/v1/sets/{code}/price-history, days as query, no auth", async () => {
+    const r = await call("get_set_price_history", { code: "mh3", days: 90 });
+    assert.equal(r.url.pathname, "/api/v1/sets/mh3/price-history");
+    assert.equal(r.url.searchParams.get("days"), "90");
+    assert.equal(r.headers.has("Authorization"), false);
+  });
+
+  it("get_set_price_history: omits the days param when not given", async () => {
+    const r = await call("get_set_price_history", { code: "mh3" });
+    assert.equal(r.url.searchParams.has("days"), false);
+  });
+});
+
+describe("inventory CSV tools", () => {
+  it("import_inventory_cards: POST /api/v1/inventory/import/cards (multipart) with auth", async () => {
+    const r = await call("import_inventory_cards", { text: "name\nLightning Bolt" });
+    assert.equal(r.method, "POST");
+    assert.equal(r.url.pathname, "/api/v1/inventory/import/cards");
+    assert.match(r.headers.get("content-type") ?? "", /multipart\/form-data/);
+    assert.equal(r.headers.get("Authorization"), "Bearer iwm_live_test");
+  });
+
+  it("export_inventory: GET /api/v1/inventory/export with auth", async () => {
+    const r = await call("export_inventory", {});
+    assert.equal(r.method, "GET");
+    assert.equal(r.url.pathname, "/api/v1/inventory/export");
+    assert.equal(r.headers.get("Authorization"), "Bearer iwm_live_test");
+  });
+});
+
+describe("sealed inventory tools", () => {
+  it("list_sealed_inventory: GET /api/v1/inventory/sealed with auth", async () => {
+    const r = await call("list_sealed_inventory", { page: 1 });
+    assert.equal(r.url.pathname, "/api/v1/inventory/sealed");
+    assert.equal(r.headers.get("Authorization"), "Bearer iwm_live_test");
+  });
+
+  it("set_sealed_inventory: POST /api/v1/inventory/sealed with the absolute quantity", async () => {
+    const r = await call("set_sealed_inventory", {
+      sealedProductUuid: "00000000-0000-0000-0000-000000000002",
+      quantity: 3,
+    });
+    assert.equal(r.method, "POST");
+    assert.equal(r.url.pathname, "/api/v1/inventory/sealed");
+    assert.deepEqual(JSON.parse(r.body as string), {
+      sealedProductUuid: "00000000-0000-0000-0000-000000000002",
+      quantity: 3,
+    });
+    assert.equal(r.headers.get("Authorization"), "Bearer iwm_live_test");
+  });
+
+  it("remove_sealed_inventory: DELETE /api/v1/inventory/sealed", async () => {
+    const r = await call("remove_sealed_inventory", {
+      sealedProductUuid: "00000000-0000-0000-0000-000000000002",
+    });
+    assert.equal(r.method, "DELETE");
+    assert.equal(r.url.pathname, "/api/v1/inventory/sealed");
+    assert.deepEqual(JSON.parse(r.body as string), {
+      sealedProductUuid: "00000000-0000-0000-0000-000000000002",
+    });
     assert.equal(r.headers.get("Authorization"), "Bearer iwm_live_test");
   });
 });
