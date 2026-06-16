@@ -2,9 +2,9 @@
      Run `npm run gen:tools-doc` after changing tools; CI enforces this. -->
 # Tools
 
-41 tools total. Generated from `src/tools/index.ts`.
+48 tools total. Generated from `src/tools/index.ts`.
 
-## No API key required (9)
+## No API key required (11)
 
 | Tool | Description |
 | --- | --- |
@@ -16,9 +16,11 @@
 | `get_set` | Get detail for a single set by code (e.g. 'lea', 'mh3'). |
 | `list_set_cards` | List all cards in a set, paginated. Supports the same filters as search_cards (rarity, type, format, legality). |
 | `get_sealed_products` | List sealed products (booster boxes, bundles, commander decks, etc.) for a set. Each entry includes a TCGPlayer purchase URL. |
+| `get_sealed_product` | Get detail for a single sealed product by its UUID, including current pricing and a TCGPlayer purchase URL. List a set's sealed products with get_sealed_products. |
+| `get_set_price_history` | Get the price history for a whole set by set code - the set's aggregate value over time. Optionally limit the window with days. For a single card's history use get_card_price_history. |
 | `get_card_buylist` | Get current buylist (sell-to-vendor) offers for a card printing, by set code and collector number. Returns offers grouped by finish (normal/foil/etched), best first, with the highest offer per finish marked. NM condition only. Use get_card_prices for retail (buy) prices instead. |
 
-## Requires an API key (32)
+## Requires an API key (37)
 
 Set `IWMM_API_KEY` in your MCP client config. Create a key at
 <https://iwantmymtg.net/user/api-keys>.
@@ -37,6 +39,11 @@ Set `IWMM_API_KEY` in your MCP client config. Create a key at
 | `add_inventory` | Add one or more cards to the authenticated user's inventory. Accepts a batch - pass a single-item array for one card. This is a real write. Use update_inventory to change quantities, remove_inventory to delete a row. |
 | `update_inventory` | Update quantities for one or more existing inventory rows. Accepts a batch. Use remove_inventory to delete a row entirely. |
 | `remove_inventory` | Remove a card+finish row from the authenticated user's inventory. |
+| `import_inventory_cards` | Bulk-import cards into the authenticated user's inventory from pasted CSV text. Native header: name,set_code,number[,quantity][,foil]; Moxfield, Archidekt, Deckbox, and TCGPlayer exports are auto-detected. Returns counts of saved/deleted/skipped rows and per-row errors. |
+| `export_inventory` | Export the authenticated user's full card inventory as CSV (columns: id, name, set_code, number, quantity, foil). Reimport-compatible with import_inventory_cards. |
+| `list_sealed_inventory` | List the authenticated user's sealed-product inventory (booster boxes, bundles, precons), paginated, with quantities and prices. For loose cards use list_inventory. |
+| `set_sealed_inventory` | Add or update a sealed product in the authenticated user's inventory by setting its absolute quantity (upserts the row for that product). This is a real write and is Premium-gated. Use remove_sealed_inventory to delete a row. |
+| `remove_sealed_inventory` | Remove a sealed product from the authenticated user's inventory entirely. Premium-gated. |
 | `list_transactions` | List the authenticated user's transactions, paginated. Supports sort/filter query params. Free tier sees the last 30 days only; Premium gets full history. |
 | `record_transaction` | Record a buy or sell transaction. By default this also adjusts inventory (BUY adds, SELL subtracts). This is a real write. |
 | `update_transaction` | Update an existing transaction by ID. Only the fields supplied are changed. Card identity and type (BUY/SELL) cannot be changed via this endpoint - delete and re-create instead. |

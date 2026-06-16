@@ -83,3 +83,36 @@ export const getInventoryQuantitiesTool = {
     return unwrap(data, error);
   },
 };
+
+export const importInventoryCardsTool = {
+  name: "import_inventory_cards",
+  description:
+    "Bulk-import cards into the authenticated user's inventory from pasted CSV text. Native header: name,set_code,number[,quantity][,foil]; Moxfield, Archidekt, Deckbox, and TCGPlayer exports are auto-detected. Returns counts of saved/deleted/skipped rows and per-row errors. Requires IWMM_API_KEY.",
+  inputSchema: z.object({
+    text: z.string().min(1).describe("CSV text including a header row."),
+  }),
+  handler: async (input: { text: string }) => {
+    // The endpoint takes a multipart file upload; wrap the pasted text as a CSV file.
+    const form = new FormData();
+    form.append("file", new Blob([input.text], { type: "text/csv" }), "inventory.csv");
+    const { data, error } = await apiClient.POST("/api/v1/inventory/import/cards", {
+      body: form as never,
+      headers: AUTH_HEADERS,
+    });
+    return unwrap(data, error);
+  },
+};
+
+export const exportInventoryTool = {
+  name: "export_inventory",
+  description:
+    "Export the authenticated user's full card inventory as CSV (columns: id, name, set_code, number, quantity, foil). Reimport-compatible with import_inventory_cards. Requires IWMM_API_KEY.",
+  inputSchema: z.object({}),
+  handler: async () => {
+    const { data, error } = await apiClient.GET("/api/v1/inventory/export", {
+      headers: AUTH_HEADERS,
+      parseAs: "text",
+    });
+    return unwrap(data, error);
+  },
+};
