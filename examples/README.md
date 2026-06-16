@@ -12,6 +12,9 @@ Screenshots and full conversation transcripts will be added as we capture them. 
 - [Portfolio insights](./portfolio.md) - summary, history, breakdowns. *Most endpoints are Premium-gated.*
 - [Price alerts](./price-alerts.md) - create an alert, manage existing alerts.
 - [Sealed products](./sealed-products.md) - browse boosters/bundles/precons by set.
+- [Selling and buy-lists](./sell-and-buy-list.md) - buylist offers, market sell value, want-list, cash-vs-credit.
+
+For the full, always-current list of every tool, see [`docs/TOOLS.md`](../docs/TOOLS.md).
 
 ## Conventions
 

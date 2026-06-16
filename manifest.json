@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "iwantmymtg-mcp",
   "display_name": "I Want My MTG",
-  "version": "0.3.1",
+  "version": "0.0.0-dev",
   "description": "Query Magic: The Gathering cards, sets, and prices and manage your I Want My MTG collection.",
   "author": {
     "name": "matthewdtowles",
@@ -31,7 +31,7 @@
     "api_key": {
       "type": "string",
       "title": "I Want My MTG API key",
-      "description": "Optional. Starts with iwm_live_. Needed only for the inventory, transaction, portfolio, and price-alert tools. Create one at https://iwantmymtg.net/user/api-keys.",
+      "description": "Optional. Starts with iwm_live_. Needed only for the authenticated tools (anything that reads or changes your own collection); read-only card, set, and price tools work without it. Create one at https://iwantmymtg.net/user/api-keys.",
       "sensitive": true,
       "required": false
     }

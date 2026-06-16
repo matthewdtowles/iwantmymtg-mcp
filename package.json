@@ -1,7 +1,7 @@
 {
   "name": "iwantmymtg-mcp",
   "mcpName": "io.github.matthewdtowles/iwantmymtg-mcp",
-  "version": "0.3.1",
+  "version": "0.0.0-dev",
   "description": "MCP server for I Want My MTG - query cards/sets and manage your collection from Claude Desktop, Claude Code, Cursor, and other MCP clients.",
   "type": "module",
   "bin": {
@@ -18,6 +18,8 @@
     "start": "node dist/index.js",
     "dev": "tsc --watch",
     "test": "node --test --import tsx test/*.test.ts",
+    "gen:tools-doc": "tsx scripts/gen-tools-doc.ts",
+    "check:tools-doc": "tsx scripts/gen-tools-doc.ts --check",
     "clean": "rm -rf dist",
     "bundle": "bash scripts/build-mcpb.sh"
   },

@@ -1,4 +1,4 @@
-name: CI
+name: CI/CD
 
 on:
   push:
@@ -16,24 +16,43 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      - run: npm run build
+      # Build against the committed OpenAPI types so PR CI is deterministic and
+      # not coupled to the live API. The scheduled sync workflow keeps the
+      # committed types fresh (see sync.yml).
+      - run: IWMM_SKIP_TYPEGEN=1 npm run build
       - run: npm test
+      # docs/TOOLS.md is generated from the tool registry; fail if it drifted.
+      - run: npm run check:tools-doc
+
+  # Version is computed from the squash-merged PR title (= head commit subject):
+  # feat -> minor, ! -> major, anything else -> patch. Git tags are the source
+  # of truth; package.json stays at its 0.0.0-dev placeholder and is stamped at
+  # publish time.
+  version:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    outputs:
+      version: ${{ steps.next.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+      - id: next
+        run: ./.github/scripts/next-version.sh >> "$GITHUB_OUTPUT"
 
   release:
-    needs: test
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: version
     runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
       contents: write
-      actions: write
     steps:
       - uses: actions/checkout@v4
       - id: check
         run: |
-          VERSION=$(node -p "require('./package.json').version")
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          if git ls-remote --tags origin "refs/tags/v$VERSION" | grep -q .; then
-            echo "Tag v$VERSION already exists; skipping release."
+          if git ls-remote --tags origin "${{ needs.version.outputs.version }}" | grep -q .; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
@@ -43,12 +62,80 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create "v${{ steps.check.outputs.version }}" \
+          gh release create "${{ needs.version.outputs.version }}" \
             --target "$GITHUB_SHA" \
-            --title "v${{ steps.check.outputs.version }}" \
+            --title "${{ needs.version.outputs.version }}" \
             --generate-notes
-      - name: Dispatch publish workflow
-        if: steps.check.outputs.exists == 'false'
+
+  publish:
+    needs: version
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      id-token: write # npm provenance + MCP Registry OIDC login
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: 'https://registry.npmjs.org'
+          cache: npm
+
+      # Idempotent: a re-run after a successful publish is a no-op.
+      - id: guard
+        run: |
+          if npm view "iwantmymtg-mcp@$VERSION" version 2>/dev/null | grep -q .; then
+            echo "Version $VERSION already on npm; skipping publish."
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.guard.outputs.exists == 'false'
+        run: npm ci
+
+      # Stamp the computed version into package.json + server.json (both ship a
+      # 0.0.0-dev placeholder in git). manifest.json is synced from package.json
+      # by the bundle script.
+      - if: steps.guard.outputs.exists == 'false'
+        run: |
+          npm version --no-git-tag-version "$VERSION"
+          jq --arg v "$VERSION" '.version = $v | .packages[0].version = $v' server.json > server.tmp && mv server.tmp server.json
+
+      - if: steps.guard.outputs.exists == 'false'
+        run: IWMM_SKIP_TYPEGEN=1 npm run build
+
+      - name: Publish to npm
+        if: steps.guard.outputs.exists == 'false'
+        run: npm publish --access public --provenance
+
+      # --- MCP Registry (after npm, so the registry can validate the just-
+      # published package, which carries mcpName) ---
+      - name: Install mcp-publisher
+        if: steps.guard.outputs.exists == 'false'
+        run: |
+          curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
+      - name: Publish to MCP Registry
+        if: steps.guard.outputs.exists == 'false'
+        run: |
+          ./mcp-publisher login github-oidc
+          ./mcp-publisher publish
+
+      # --- Smithery (optional, non-blocking). Skips cleanly without a key and
+      # never fails the release after the irreversible npm publish. ---
+      - name: Publish to Smithery
+        if: steps.guard.outputs.exists == 'false'
+        continue-on-error: true
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh workflow run publish.yml --ref "v${{ steps.check.outputs.version }}"
+          SMITHERY_API_KEY: ${{ secrets.SMITHERY_API_KEY }}
+          IWMM_SKIP_TYPEGEN: '1' # bundle rebuilds; keep it on the committed types
+        run: |
+          if [ -z "$SMITHERY_API_KEY" ]; then
+            echo "SMITHERY_API_KEY not set; skipping Smithery publish."
+            exit 0
+          fi
+          npm run bundle
+          npx -y @smithery/cli mcp publish ./iwantmymtg-mcp.mcpb -n matthewdtowles/iwantmymtg-mcp
