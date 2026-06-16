@@ -32,7 +32,7 @@ Set `IWMM_API_KEY` in your MCP client config. Create a key at
 | `update_buy_list` | Set the absolute quantity for a buy-list card+finish (not a delta). A quantity of 0 removes the row. Use add_buy_list to increment instead. |
 | `remove_buy_list` | Remove a card+finish row from the authenticated user's buy-list entirely. |
 | `import_buy_list` | Bulk-add cards to the authenticated user's buy-list from pasted CSV text. Native format header: name,set_code,number[,quantity][,foil]. External exports (Moxfield, Archidekt, Deckbox, TCGPlayer) are auto-detected. Returns counts and per-row errors. |
-| `list_inventory` | List the authenticated user's card inventory, paginated. Requires IWMM_API_KEY. Returns cards with quantities, prices, and metadata. |
+| `list_inventory` | List the authenticated user's card inventory, paginated. Returns cards with quantities, prices, and metadata. |
 | `get_inventory_quantities` | Batch lookup: given a list of card UUIDs, return how many of each (normal + foil) the user owns. Useful before recommending adds. |
 | `add_inventory` | Add one or more cards to the authenticated user's inventory. Accepts a batch - pass a single-item array for one card. This is a real write. Use update_inventory to change quantities, remove_inventory to delete a row. |
 | `update_inventory` | Update quantities for one or more existing inventory rows. Accepts a batch. Use remove_inventory to delete a row entirely. |
