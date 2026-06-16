@@ -30,7 +30,7 @@ No API key required for any of this.
 
 > What sealed products are available for Modern Horizons 3?
 
-`[tool: get_sealed_products]` with `setCode: "MH3"`. Returns boosters, bundles, precons with current pricing.
+`[tool: get_sealed_products]` with `code: "MH3"`. Returns boosters, bundles, precons with current pricing.
 
 > Show me the detail and price for that collector booster box.
 
