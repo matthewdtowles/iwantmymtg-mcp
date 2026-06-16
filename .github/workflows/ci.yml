@@ -67,6 +67,10 @@ jobs:
             --title "${{ needs.version.outputs.version }}" \
             --generate-notes
 
+  # npm publishes via OIDC Trusted Publishing (no token). The trusted publisher
+  # on npmjs.com is bound to THIS workflow file — renaming or moving this job to
+  # another workflow breaks publishing with `npm error 404 ... permission`.
+  # Keep it in ci.yml, or update the trusted publisher's workflow name to match.
   publish:
     needs: [version, release]
     runs-on: ubuntu-latest

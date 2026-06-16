@@ -29,9 +29,12 @@ if [ -n "$existing" ]; then
     exit 0
 fi
 
-last=$(git tag --list --sort=-v:refname | grep -E "$semver" | head -1 || true)
+# Strip the legacy "v" prefix BEFORE sorting. `git --sort=-v:refname` mis-orders
+# a mix of "v0.3.1" and "0.4.0" tags (the leading "v" outranks the digit, so
+# v0.3.1 sorts above 0.4.0). Normalize to bare semver and use `sort -V` so the
+# true highest wins regardless of prefix.
+last=$(git tag --list | sed 's/^v//' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1 || true)
 last=${last:-0.0.0}
-last=${last#v}
 IFS=. read -r major minor patch <<< "$last"
 
 subject=$(git log -1 --format=%s)
