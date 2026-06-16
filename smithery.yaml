@@ -13,8 +13,8 @@ startCommand:
         description: >-
           Your I Want My MTG API key (starts with iwm_live_). Optional:
           read-only card, set, and price tools work without it. Required only
-          for the inventory, transaction, portfolio, and price-alert tools.
-          Create one at https://iwantmymtg.net/user/api-keys.
+          for the authenticated tools (anything that reads or changes your own
+          collection). Create one at https://iwantmymtg.net/user/api-keys.
   commandFunction:
     # A function that produces the CLI command to start the MCP server on stdio.
     |-

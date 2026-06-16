@@ -1,0 +1,59 @@
+name: Sync generated artifacts
+
+# Keeps checked-in generated files fresh against the live API without anyone
+# remembering to: regenerates the OpenAPI types and the tool catalog, proves
+# they still build and pass tests, and opens a PR when something changed.
+# Merging the PR (chore: -> patch) ships the refresh through the normal release.
+on:
+  schedule:
+    - cron: '0 6 * * 1' # Mondays 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Use a PAT (GH_PAT) if provided so the opened PR triggers CI; falls
+          # back to GITHUB_TOKEN, in which case the validation below is the gate.
+          token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+
+      - name: Regenerate OpenAPI types and tool catalog
+        run: |
+          npm run build:types
+          npm run gen:tools-doc
+
+      - name: Validate the refresh builds and passes tests
+        run: |
+          IWMM_SKIP_TYPEGEN=1 npm run build
+          npm test
+
+      - name: Open a PR if anything changed
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+        run: |
+          if git diff --quiet -- src/generated/api-types.ts docs/TOOLS.md; then
+            echo "Generated artifacts already up to date."
+            exit 0
+          fi
+          BRANCH="chore/sync-generated-$(date +%Y%m%d)"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add src/generated/api-types.ts docs/TOOLS.md
+          git commit -m "chore: sync generated OpenAPI types and tool docs"
+          git push -u origin "$BRANCH" --force
+          gh pr create --base main --head "$BRANCH" \
+            --title "chore: sync generated OpenAPI types and tool docs" \
+            --body "Automated refresh from the live OpenAPI spec. Build and tests passed in the sync job." \
+            || echo "PR already open for $BRANCH; pushed update."

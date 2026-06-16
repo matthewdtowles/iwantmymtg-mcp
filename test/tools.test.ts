@@ -68,6 +68,33 @@ describe("tool registry", () => {
       assert.equal(typeof t.handler, "function", `${t.name}: handler is not a function`);
     }
   });
+
+  // The auto-generated docs/TOOLS.md buckets tools by whether the description
+  // says "Requires IWMM_API_KEY". Keep that signal trustworthy: a tool declares
+  // the requirement iff it is not in this read-only set. A new authenticated
+  // tool that forgets the phrase (or a new read-only tool) trips this test.
+  it("authenticated tools declare the API-key requirement in their description", () => {
+    const readOnly = new Set([
+      "search_cards",
+      "get_card",
+      "get_card_prices",
+      "get_card_price_history",
+      "search_sets",
+      "get_set",
+      "list_set_cards",
+      "get_sealed_products",
+      "get_card_buylist",
+    ]);
+    for (const t of tools) {
+      const declares = /Requires IWMM_API_KEY/i.test(t.description);
+      assert.equal(
+        declares,
+        !readOnly.has(t.name),
+        `${t.name}: description ${declares ? "declares" : "omits"} the API-key requirement, ` +
+          `but it is ${readOnly.has(t.name) ? "read-only" : "authenticated"}`,
+      );
+    }
+  });
 });
 
 describe("read-only tools", () => {

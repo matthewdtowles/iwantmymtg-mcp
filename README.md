@@ -6,7 +6,7 @@
 
 An [MCP](https://modelcontextprotocol.io) server for [I Want My MTG](https://iwantmymtg.net). Exposes IWMM's API as tools so Claude Desktop, Claude Code, Cursor, and other MCP clients can search Magic: The Gathering cards/sets and manage a user's collection conversationally.
 
-> Status: v0 scaffold. The set of tools below is the v1 surface; coverage will expand to match the API.
+> Published on [npm](https://www.npmjs.com/package/iwantmymtg-mcp), the [MCP Registry](https://github.com/modelcontextprotocol/registry), and [Smithery](https://smithery.ai/servers/matthewdtowles/iwantmymtg-mcp). Coverage expands to match the API; see [`docs/TOOLS.md`](docs/TOOLS.md) for the full, always-current tool list.
 
 ![Demo: Claude Code answering four collection queries via the iwmm MCP server](assets/four-queries-demo.gif)
 
@@ -96,7 +96,7 @@ After saving, restart Cursor and confirm `iwmm` appears under **Settings -> Feat
 - "What's my collection worth to sell right now, and which vendor pays most?"
 - "Add these cards to my buy list, then tell me whether cash or store credit is the better deal."
 
-See [`examples/`](https://github.com/matthewdtowles/iwantmymtg-mcp/tree/main/examples) for walkthroughs of common flows (card lookup, inventory, transactions, portfolio insights, price alerts).
+See [`examples/`](https://github.com/matthewdtowles/iwantmymtg-mcp/tree/main/examples) for walkthroughs of common flows, and [`docs/TOOLS.md`](docs/TOOLS.md) for the full tool reference.
 
 ## Configuration
 
