@@ -10,7 +10,7 @@ const inventoryItem = z.object({
 export const listInventoryTool = {
   name: "list_inventory",
   description:
-    "List the authenticated user's card inventory, paginated. Requires IWMM_API_KEY. Returns cards with quantities, prices, and metadata.",
+    "List the authenticated user's card inventory, paginated. Returns cards with quantities, prices, and metadata. Requires IWMM_API_KEY.",
   inputSchema: z.object({
     page: z.number().int().min(1).optional(),
     limit: z.number().int().min(1).max(100).optional(),

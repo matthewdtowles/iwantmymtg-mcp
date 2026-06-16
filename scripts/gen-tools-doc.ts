@@ -17,7 +17,7 @@ import { tools } from "../src/tools/index.js";
 
 const OUT = resolve(dirname(fileURLToPath(import.meta.url)), "../docs/TOOLS.md");
 
-const needsAuth = (description: string) => /Requires IWMM_API_KEY/i.test(description);
+const needsAuth = (description: string) => /Requires IWMM_API_KEY\.?\s*$/i.test(description);
 
 function table(rows: { name: string; description: string }[]): string {
   const lines = ["| Tool | Description |", "| --- | --- |"];

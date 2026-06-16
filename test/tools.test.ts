@@ -70,9 +70,10 @@ describe("tool registry", () => {
   });
 
   // The auto-generated docs/TOOLS.md buckets tools by whether the description
-  // says "Requires IWMM_API_KEY". Keep that signal trustworthy: a tool declares
-  // the requirement iff it is not in this read-only set. A new authenticated
-  // tool that forgets the phrase (or a new read-only tool) trips this test.
+  // ends with "Requires IWMM_API_KEY". Keep that signal trustworthy: a tool
+  // declares the requirement iff it is not in this read-only set. A new
+  // authenticated tool that forgets the phrase (or puts it mid-description, or
+  // a new read-only tool) trips this test.
   it("authenticated tools declare the API-key requirement in their description", () => {
     const readOnly = new Set([
       "search_cards",
@@ -86,7 +87,7 @@ describe("tool registry", () => {
       "get_card_buylist",
     ]);
     for (const t of tools) {
-      const declares = /Requires IWMM_API_KEY/i.test(t.description);
+      const declares = /Requires IWMM_API_KEY\.?\s*$/i.test(t.description);
       assert.equal(
         declares,
         !readOnly.has(t.name),
