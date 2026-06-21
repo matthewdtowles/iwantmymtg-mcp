@@ -89,8 +89,9 @@ export const getPortfolioBreakdownTool = {
       ),
   }),
   handler: async (input: { by: string; colors?: string }) => {
+    const colors = input.by === "color" ? input.colors : undefined;
     const { data, error } = await apiClient.GET("/api/v1/portfolio/breakdown", {
-      params: { query: { by: input.by, colors: input.colors } as never },
+      params: { query: { by: input.by, colors } as never },
       headers: AUTH_HEADERS,
     });
     return unwrap(data, error);
@@ -116,8 +117,9 @@ export const getPortfolioBreakdownCardsTool = {
       ),
   }),
   handler: async (input: { by: string; key: string; colors?: string }) => {
+    const colors = input.by === "color" ? input.colors : undefined;
     const { data, error } = await apiClient.GET("/api/v1/portfolio/breakdown/cards", {
-      params: { query: { by: input.by, key: input.key, colors: input.colors } as never },
+      params: { query: { by: input.by, key: input.key, colors } as never },
       headers: AUTH_HEADERS,
     });
     return unwrap(data, error);

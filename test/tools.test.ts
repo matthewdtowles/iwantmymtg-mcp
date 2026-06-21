@@ -260,6 +260,12 @@ describe("portfolio tools", () => {
     const r = await call("get_portfolio_breakdown", { by: "color", colors: "W,U" });
     assert.equal(r.url.searchParams.get("by"), "color");
     assert.equal(r.url.searchParams.get("colors"), "W,U");
+    assert.equal(r.headers.get("Authorization"), "Bearer iwm_live_test");
+  });
+
+  it("get_portfolio_breakdown: drops colors for non-color dimensions", async () => {
+    const r = await call("get_portfolio_breakdown", { by: "set", colors: "W,U" });
+    assert.equal(r.url.searchParams.has("colors"), false);
   });
 
   it("get_portfolio_breakdown_cards: GET /api/v1/portfolio/breakdown/cards with by + key", async () => {

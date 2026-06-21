@@ -30,6 +30,7 @@ const format = z
 const deckId = z
   .number()
   .int()
+  .min(1)
   .describe("Deck id. Get from list_decks or create_deck.");
 
 const cardId = z
