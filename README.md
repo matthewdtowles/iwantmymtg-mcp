@@ -13,7 +13,7 @@ An [MCP](https://modelcontextprotocol.io) server for [I Want My MTG](https://iwa
 ## What you can do
 
 - **Anonymous (no key):** search cards, look up a card by set+number, get current prices and 30-day price history, get a card's buylist (sell-to-vendor) offers, list sets and their cards, list sealed products.
-- **Authenticated (with an IWMM API key):** manage your inventory and transactions; view portfolio summaries, history, performance, cash flow, realized gains, and breakdowns; manage price alerts and notifications.
+- **Authenticated (with an IWMM API key):** manage your inventory and transactions; build and manage decks (create, import from a decklist, edit cards, add the cards you're missing to your buy-list); view portfolio summaries, history, performance, cash flow, realized gains, and breakdowns (including by color, with per-slice drill-down); manage price alerts and notifications.
 - **Sell tools (with a key):** see your collection's market sell value (best buylist offer per card, grouped by vendor), manage a buy-list (want-list), and get a cash-vs-store-credit recommendation for selling toward your buy list.
 
 See the [project roadmap](https://github.com/matthewdtowles/i-want-my-mtg/blob/main/ROADMAP.md#43-mcp-server--agentic-ai-integration) for what's next.

@@ -76,15 +76,48 @@ export const getRealizedGainsTool = {
 export const getPortfolioBreakdownTool = {
   name: "get_portfolio_breakdown",
   description:
-    "Get the user's collection value broken down by a dimension. Premium-gated. Requires IWMM_API_KEY.",
+    "Get the user's collection value broken down by a dimension into slices (each with value, count, and share). Premium-gated. Use get_portfolio_breakdown_cards to drill into one slice. Requires IWMM_API_KEY.",
   inputSchema: z.object({
     by: z
-      .enum(["set", "rarity", "type", "format", "cost-basis"])
-      .describe("Dimension to break down by. 'cost-basis' buckets are gain/loss/at-cost."),
+      .enum(["set", "rarity", "type", "color", "cost-basis"])
+      .describe("Dimension to break down by. 'cost-basis' buckets are gain/loss/at-cost; 'color' groups by color identity."),
+    colors: z
+      .string()
+      .optional()
+      .describe(
+        "Only for by=color: comma-separated identity codes (W,U,B,R,G,C; C is colorless) to keep only cards whose color identity contains all of them. Ignored for other dimensions.",
+      ),
   }),
-  handler: async ({ by }: { by: string }) => {
+  handler: async (input: { by: string; colors?: string }) => {
     const { data, error } = await apiClient.GET("/api/v1/portfolio/breakdown", {
-      params: { query: { by } as never },
+      params: { query: { by: input.by, colors: input.colors } as never },
+      headers: AUTH_HEADERS,
+    });
+    return unwrap(data, error);
+  },
+};
+
+export const getPortfolioBreakdownCardsTool = {
+  name: "get_portfolio_breakdown_cards",
+  description:
+    "Get the cards inside one slice of a portfolio breakdown (the drill-down for get_portfolio_breakdown). Premium-gated. Requires IWMM_API_KEY.",
+  inputSchema: z.object({
+    by: z
+      .enum(["set", "rarity", "type", "color", "cost-basis"])
+      .describe("Dimension the slice belongs to. Must match the get_portfolio_breakdown call."),
+    key: z
+      .string()
+      .describe("Slice key from the breakdown: a set code, rarity, type, cost-basis bucket, or color code."),
+    colors: z
+      .string()
+      .optional()
+      .describe(
+        "Only for by=color: the same superset filter (W,U,B,R,G,C) passed to get_portfolio_breakdown, so the drill-down matches the aggregate row. Ignored for other dimensions.",
+      ),
+  }),
+  handler: async (input: { by: string; key: string; colors?: string }) => {
+    const { data, error } = await apiClient.GET("/api/v1/portfolio/breakdown/cards", {
+      params: { query: { by: input.by, key: input.key, colors: input.colors } as never },
       headers: AUTH_HEADERS,
     });
     return unwrap(data, error);

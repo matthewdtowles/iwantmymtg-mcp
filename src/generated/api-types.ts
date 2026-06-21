@@ -300,6 +300,96 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/decks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the authenticated user's decks */
+        get: operations["DeckApiController_list"];
+        put?: never;
+        /** Create a deck */
+        post: operations["DeckApiController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/decks/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create a deck from pasted decklist text */
+        post: operations["DeckApiController_import"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/decks/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a deck with its cards */
+        get: operations["DeckApiController_get"];
+        put?: never;
+        post?: never;
+        /** Delete a deck */
+        delete: operations["DeckApiController_remove"];
+        options?: never;
+        head?: never;
+        /** Rename / re-format a deck */
+        patch: operations["DeckApiController_update"];
+        trace?: never;
+    };
+    "/api/v1/decks/{id}/missing-to-buy-list": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add the deck's missing cards (vs. inventory) to the buy-list */
+        post: operations["DeckApiController_missingToBuyList"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/decks/{id}/cards": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add a card to a deck (increments quantity) */
+        post: operations["DeckApiController_addCard"];
+        /** Remove a card from a deck */
+        delete: operations["DeckApiController_removeCard"];
+        options?: never;
+        head?: never;
+        /** Set the absolute quantity for a card (0 removes it) */
+        patch: operations["DeckApiController_setCardQuantity"];
+        trace?: never;
+    };
     "/api/v1/inventory": {
         parameters: {
             query?: never;
@@ -528,6 +618,23 @@ export interface paths {
         };
         /** Get portfolio value breakdown by dimension (Premium) */
         get: operations["PortfolioApiController_getBreakdown"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/portfolio/breakdown/cards": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the cards inside one breakdown slice (Premium) */
+        get: operations["PortfolioApiController_getBreakdownCards"];
         put?: never;
         post?: never;
         delete?: never;
@@ -984,6 +1091,50 @@ export interface components {
              */
             allowedValues?: string[];
         };
+        DeckCreateApiDto: {
+            name: string;
+            /**
+             * @description Target format (omit for no format).
+             * @enum {string}
+             */
+            format?: "standard" | "commander" | "modern" | "legacy" | "vintage" | "brawl" | "explorer" | "historic" | "oathbreaker" | "pauper" | "pioneer";
+        };
+        DeckImportApiDto: {
+            name: string;
+            /**
+             * @description Target format (omit for no format).
+             * @enum {string}
+             */
+            format?: "standard" | "commander" | "modern" | "legacy" | "vintage" | "brawl" | "explorer" | "historic" | "oathbreaker" | "pauper" | "pioneer";
+            /** @description Decklist text, one entry per line (e.g. "4 Lightning Bolt"). */
+            text: string;
+        };
+        DeckUpdateApiDto: {
+            name: string;
+            /**
+             * @description Target format (omit to clear).
+             * @enum {string}
+             */
+            format?: "standard" | "commander" | "modern" | "legacy" | "vintage" | "brawl" | "explorer" | "historic" | "oathbreaker" | "pauper" | "pioneer";
+        };
+        DeckCardAddApiDto: {
+            cardId: string;
+            /** @default false */
+            isSideboard: boolean;
+            /** @default 1 */
+            quantity: number;
+        };
+        DeckCardSetQuantityApiDto: {
+            cardId: string;
+            /** @default false */
+            isSideboard: boolean;
+            quantity: number;
+        };
+        DeckCardRemoveApiDto: {
+            cardId: string;
+            /** @default false */
+            isSideboard: boolean;
+        };
         InventoryImportResponseDto: {
             /** @description Number of inventory rows saved (created or updated to exact qty) */
             saved: number;
@@ -1311,6 +1462,8 @@ export interface operations {
             query?: {
                 limit?: unknown;
                 page?: unknown;
+                /** @description Set to "name" to return one representative printing per distinct card name (newest printing), instead of one row per printing. With "name", a `format` param flags each result's legality in that format. */
+                groupBy?: "name";
                 /** @description Legality status; only meaningful with format. Defaults to "legal". */
                 legality?: "legal" | "banned" | "restricted";
                 /** @description Filter by format legality (joins legality table; defaults legality=legal) */
@@ -1519,6 +1672,252 @@ export interface operations {
             };
             /** @description Card not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    DeckApiController_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deck summaries */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    DeckApiController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeckCreateApiDto"];
+            };
+        };
+        responses: {
+            /** @description Created deck */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    DeckApiController_import: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeckImportApiDto"];
+            };
+        };
+        responses: {
+            /** @description Import result with the new deck id + unresolved lines */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    DeckApiController_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deck detail */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Deck not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    DeckApiController_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Deck not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    DeckApiController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeckUpdateApiDto"];
+            };
+        };
+        responses: {
+            /** @description Updated deck */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Deck not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    DeckApiController_missingToBuyList: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Count of distinct cards added */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Deck not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    DeckApiController_addCard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeckCardAddApiDto"];
+            };
+        };
+        responses: {
+            /** @description Added */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    DeckApiController_removeCard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeckCardRemoveApiDto"];
+            };
+        };
+        responses: {
+            /** @description Removed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    DeckApiController_setCardQuantity: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeckCardSetQuantityApiDto"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1869,8 +2268,10 @@ export interface operations {
     PortfolioApiController_getBreakdown: {
         parameters: {
             query?: {
-                /** @description Dimension to group by (set, rarity, type, cost-basis) */
+                /** @description Dimension to group by (set, rarity, type, color, cost-basis) */
                 by?: string;
+                /** @description For by=color: comma-separated codes (W,U,B,R,G,C) to keep only cards whose color identity contains all of them; 'C' is colorless. Ignored for other dimensions. */
+                colors?: string;
             };
             header?: never;
             path?: never;
@@ -1879,6 +2280,38 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description Breakdown slices and totals */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Premium subscription required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PortfolioApiController_getBreakdownCards: {
+        parameters: {
+            query?: {
+                /** @description Slice key from the breakdown (set code, rarity, type, cost-basis bucket, or color code). A missing/empty key returns an empty list. */
+                key?: string;
+                /** @description Dimension the slice belongs to (set, rarity, type, color, cost-basis) */
+                by?: string;
+                /** @description For by=color: the active superset filter (W,U,B,R,G,C) so drill-down matches the aggregate row. Ignored for other dimensions. */
+                colors?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cards in the slice */
             200: {
                 headers: {
                     [name: string]: unknown;

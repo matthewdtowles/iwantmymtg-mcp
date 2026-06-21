@@ -256,6 +256,23 @@ describe("portfolio tools", () => {
     assert.equal(r.url.searchParams.get("by"), "set");
   });
 
+  it("get_portfolio_breakdown: forwards the colors superset filter", async () => {
+    const r = await call("get_portfolio_breakdown", { by: "color", colors: "W,U" });
+    assert.equal(r.url.searchParams.get("by"), "color");
+    assert.equal(r.url.searchParams.get("colors"), "W,U");
+  });
+
+  it("get_portfolio_breakdown_cards: GET /api/v1/portfolio/breakdown/cards with by + key", async () => {
+    const r = await call("get_portfolio_breakdown_cards", {
+      by: "rarity",
+      key: "mythic",
+    });
+    assert.equal(r.url.pathname, "/api/v1/portfolio/breakdown/cards");
+    assert.equal(r.url.searchParams.get("by"), "rarity");
+    assert.equal(r.url.searchParams.get("key"), "mythic");
+    assert.equal(r.headers.get("Authorization"), "Bearer iwm_live_test");
+  });
+
   it("get_card_performance: GET /api/v1/portfolio/performance", async () => {
     const r = await call("get_card_performance", { type: "worst", limit: 5 });
     assert.equal(r.url.pathname, "/api/v1/portfolio/performance");
@@ -277,6 +294,91 @@ describe("portfolio tools", () => {
     const r = await call("refresh_portfolio", {});
     assert.equal(r.method, "POST");
     assert.equal(r.url.pathname, "/api/v1/portfolio/refresh");
+  });
+});
+
+describe("deck tools", () => {
+  const cardId = "00000000-0000-0000-0000-000000000003";
+
+  it("list_decks: GET /api/v1/decks with auth", async () => {
+    const r = await call("list_decks", {});
+    assert.equal(r.url.pathname, "/api/v1/decks");
+    assert.equal(r.method, "GET");
+    assert.equal(r.headers.get("Authorization"), "Bearer iwm_live_test");
+  });
+
+  it("get_deck: GET /api/v1/decks/{id}", async () => {
+    const r = await call("get_deck", { deckId: 12 });
+    assert.equal(r.url.pathname, "/api/v1/decks/12");
+    assert.equal(r.method, "GET");
+  });
+
+  it("create_deck: POST /api/v1/decks with name + format", async () => {
+    const r = await call("create_deck", { name: "Mono Red", format: "modern" });
+    assert.equal(r.method, "POST");
+    assert.equal(r.url.pathname, "/api/v1/decks");
+    assert.deepEqual(JSON.parse(r.body as string), { name: "Mono Red", format: "modern" });
+  });
+
+  it("import_deck: POST /api/v1/decks/import with the decklist text", async () => {
+    const r = await call("import_deck", { name: "Burn", text: "4 Lightning Bolt" });
+    assert.equal(r.method, "POST");
+    assert.equal(r.url.pathname, "/api/v1/decks/import");
+    assert.equal(JSON.parse(r.body as string).text, "4 Lightning Bolt");
+  });
+
+  it("update_deck: PATCH /api/v1/decks/{id}", async () => {
+    const r = await call("update_deck", { deckId: 5, name: "Renamed" });
+    assert.equal(r.method, "PATCH");
+    assert.equal(r.url.pathname, "/api/v1/decks/5");
+    assert.equal(JSON.parse(r.body as string).name, "Renamed");
+  });
+
+  it("delete_deck: DELETE /api/v1/decks/{id}", async () => {
+    const r = await call("delete_deck", { deckId: 5 });
+    assert.equal(r.method, "DELETE");
+    assert.equal(r.url.pathname, "/api/v1/decks/5");
+  });
+
+  it("add_deck_card: POST /api/v1/decks/{id}/cards, defaulting board + quantity", async () => {
+    const r = await call("add_deck_card", { deckId: 5, cardId });
+    assert.equal(r.method, "POST");
+    assert.equal(r.url.pathname, "/api/v1/decks/5/cards");
+    assert.deepEqual(JSON.parse(r.body as string), {
+      cardId,
+      isSideboard: false,
+      quantity: 1,
+    });
+  });
+
+  it("set_deck_card_quantity: PATCH /api/v1/decks/{id}/cards with absolute quantity", async () => {
+    const r = await call("set_deck_card_quantity", {
+      deckId: 5,
+      cardId,
+      isSideboard: true,
+      quantity: 0,
+    });
+    assert.equal(r.method, "PATCH");
+    assert.equal(r.url.pathname, "/api/v1/decks/5/cards");
+    assert.deepEqual(JSON.parse(r.body as string), {
+      cardId,
+      isSideboard: true,
+      quantity: 0,
+    });
+  });
+
+  it("remove_deck_card: DELETE /api/v1/decks/{id}/cards", async () => {
+    const r = await call("remove_deck_card", { deckId: 5, cardId, isSideboard: false });
+    assert.equal(r.method, "DELETE");
+    assert.equal(r.url.pathname, "/api/v1/decks/5/cards");
+    assert.deepEqual(JSON.parse(r.body as string), { cardId, isSideboard: false });
+  });
+
+  it("deck_missing_to_buy_list: POST /api/v1/decks/{id}/missing-to-buy-list", async () => {
+    const r = await call("deck_missing_to_buy_list", { deckId: 5 });
+    assert.equal(r.method, "POST");
+    assert.equal(r.url.pathname, "/api/v1/decks/5/missing-to-buy-list");
+    assert.equal(r.headers.get("Authorization"), "Bearer iwm_live_test");
   });
 });
 
