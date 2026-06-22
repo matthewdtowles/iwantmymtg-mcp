@@ -37,8 +37,21 @@ import {
   getCashFlowTool,
   getRealizedGainsTool,
   getPortfolioBreakdownTool,
+  getPortfolioBreakdownCardsTool,
   refreshPortfolioTool,
 } from "./portfolio.js";
+import {
+  listDecksTool,
+  getDeckTool,
+  createDeckTool,
+  importDeckTool,
+  updateDeckTool,
+  deleteDeckTool,
+  addDeckCardTool,
+  setDeckCardQuantityTool,
+  removeDeckCardTool,
+  deckMissingToBuyListTool,
+} from "./decks.js";
 import {
   listAlertsTool,
   createAlertTool,
@@ -118,7 +131,19 @@ export const tools: ToolDefinition[] = [
   getCashFlowTool,
   getRealizedGainsTool,
   getPortfolioBreakdownTool,
+  getPortfolioBreakdownCardsTool,
   refreshPortfolioTool,
+  // Decks (auth)
+  listDecksTool,
+  getDeckTool,
+  createDeckTool,
+  importDeckTool,
+  updateDeckTool,
+  deleteDeckTool,
+  addDeckCardTool,
+  setDeckCardQuantityTool,
+  removeDeckCardTool,
+  deckMissingToBuyListTool,
   // Price alerts (auth)
   listAlertsTool,
   createAlertTool,

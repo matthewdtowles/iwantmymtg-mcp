@@ -2,7 +2,7 @@
      Run `npm run gen:tools-doc` after changing tools; CI enforces this. -->
 # Tools
 
-48 tools total. Generated from `src/tools/index.ts`.
+59 tools total. Generated from `src/tools/index.ts`.
 
 ## No API key required (11)
 
@@ -20,7 +20,7 @@
 | `get_set_price_history` | Get the price history for a whole set by set code - the set's aggregate value over time. Optionally limit the window with days. For a single card's history use get_card_price_history. |
 | `get_card_buylist` | Get current buylist (sell-to-vendor) offers for a card printing, by set code and collector number. Returns offers grouped by finish (normal/foil/etched), best first, with the highest offer per finish marked. NM condition only. Use get_card_prices for retail (buy) prices instead. |
 
-## Requires an API key (37)
+## Requires an API key (48)
 
 Set `IWMM_API_KEY` in your MCP client config. Create a key at
 <https://iwantmymtg.net/user/api-keys>.
@@ -54,8 +54,19 @@ Set `IWMM_API_KEY` in your MCP client config. Create a key at
 | `get_card_performance` | Get the user's best- or worst-performing cards by P&L. Default: best, top 10. Premium-gated. |
 | `get_cash_flow` | Get the user's cash flow (money in vs money out from BUY/SELL transactions). Premium-gated. |
 | `get_realized_gains` | Get the user's realized gains from SELL transactions using FIFO cost basis. Premium-gated. |
-| `get_portfolio_breakdown` | Get the user's collection value broken down by a dimension. Premium-gated. |
+| `get_portfolio_breakdown` | Get the user's collection value broken down by a dimension into slices (each with value, count, and share). Premium-gated. Use get_portfolio_breakdown_cards to drill into one slice. |
+| `get_portfolio_breakdown_cards` | Get the cards inside one slice of a portfolio breakdown (the drill-down for get_portfolio_breakdown). Premium-gated. |
 | `refresh_portfolio` | Recalculate the user's portfolio P&L. Use after recording a batch of transactions if you want immediate fresh numbers. |
+| `list_decks` | List the authenticated user's decks (summaries: id, name, format, card counts). |
+| `get_deck` | Get one deck with its cards (mainboard + sideboard). |
+| `create_deck` | Create a new empty deck. This is a real write. Use add_deck_card to fill it, or import_deck to create from pasted text instead. |
+| `import_deck` | Create a deck from pasted decklist text, one entry per line (e.g. "4 Lightning Bolt"). Returns the new deck id plus any lines that could not be resolved to a card. |
+| `update_deck` | Rename a deck or change its format. Omitting format clears it. |
+| `delete_deck` | Delete a deck and all of its cards. This is permanent. |
+| `add_deck_card` | Add a card to a deck, incrementing its quantity (creates the row if absent). Use set_deck_card_quantity to set an absolute quantity or remove_deck_card to delete a row. |
+| `set_deck_card_quantity` | Set the absolute quantity for a card + board in a deck (not a delta). A quantity of 0 removes the row. Use add_deck_card to increment instead. |
+| `remove_deck_card` | Remove a card + board row from a deck entirely. |
+| `deck_missing_to_buy_list` | Add the deck's missing cards (the shortfall vs. the user's inventory) to their buy-list. Returns the count of distinct cards added. This is a real write to the buy-list. |
 | `list_price_alerts` | List the authenticated user's price alerts. Free tier is capped at 5 active alerts and a single threshold direction per alert; Premium removes both limits. |
 | `create_price_alert` | Create a price alert for a card. Supply increasePct, decreasePct, or both (Premium). At least one threshold is required. |
 | `update_price_alert` | Update an existing price alert. Pass null for a threshold to clear it (Premium only - free users must keep exactly one direction). isActive toggles enable/disable without deleting. |
