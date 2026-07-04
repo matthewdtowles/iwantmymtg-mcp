@@ -65,8 +65,42 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Login and obtain JWT token */
+        /** Login and obtain access + refresh tokens */
         post: operations["AuthApiController_login"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Exchange a refresh token for a new access token (rotates the refresh token) */
+        post: operations["AuthApiController_refresh"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Revoke a refresh token (sign-out) */
+        post: operations["AuthApiController_logout"];
         delete?: never;
         options?: never;
         head?: never;
@@ -482,6 +516,24 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications/devices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Register (or refresh) this device's push token for the authenticated user */
+        post: operations["NotificationDeviceApiController_register"];
+        /** Unregister a device's push token (e.g. on sign-out) */
+        delete: operations["NotificationDeviceApiController_unregister"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1035,14 +1087,58 @@ export interface components {
             /** @description User-supplied label for the key */
             name: string;
         };
+        PaginationMeta: {
+            page: number;
+            limit: number;
+            total: number;
+            totalPages: number;
+        };
+        BlockPaginationMeta: {
+            page: number;
+            limit: number;
+            total: number;
+            totalPages: number;
+            multiSetBlockKeys?: string[];
+        };
+        LoginResponseDto: {
+            /** @description Short-lived JWT for the Authorization header. */
+            accessToken: string;
+            /** @description Long-lived opaque token. Exchange it at POST /api/v1/auth/refresh for a new access token; rotated on each use. */
+            refreshToken: string;
+        };
         LoginRequestDto: {
             /** @example user@example.com */
             email: string;
             password: string;
+            /**
+             * @description Optional client/device label stored with the refresh token so a user can tell their sessions apart.
+             * @example iPhone 15
+             */
+            deviceLabel?: string;
+        };
+        RefreshRequestDto: {
+            /** @description The refresh token issued at login (or the previous refresh call). */
+            refreshToken: string;
         };
         CheckoutRequestDto: {
             /** @enum {string} */
             plan: "monthly" | "annual";
+        };
+        BuyListItemApiDto: {
+            cardId: string;
+            quantity: number;
+            isFoil: boolean;
+            cardName?: string;
+            setCode?: string;
+            cardNumber?: string;
+            imgSrc?: string;
+            rarity?: string;
+            keyruneCode?: string;
+            priceNormal?: number;
+            priceFoil?: number;
+            hasNonFoil?: boolean;
+            hasFoil?: boolean;
+            url?: string;
         };
         BuyListAddApiDto: {
             cardId: string;
@@ -1062,13 +1158,43 @@ export interface components {
             /** @default false */
             isFoil: boolean;
         };
+        BuyListImportResponseDto: {
+            saved: number;
+            errors: string[];
+        };
         BuyListImportApiDto: {
             /** @description Pasted CSV with a header row (native: name,set_code,number,quantity,foil). External exports (Moxfield, Archidekt, Deckbox, TCGPlayer) are auto-detected. */
             text: string;
         };
-        BuyListImportResponseDto: {
-            saved: number;
-            errors: string[];
+        CardPriceDto: {
+            normal?: number;
+            foil?: number;
+            normalChangeWeekly?: number;
+            foilChangeWeekly?: number;
+        };
+        CardApiResponseDto: {
+            id: string;
+            name: string;
+            setCode: string;
+            number: string;
+            type: string;
+            rarity: string;
+            manaCost?: string;
+            oracleText?: string;
+            artist?: string;
+            flavorName?: string;
+            imgSrc: string;
+            hasFoil: boolean;
+            hasNonFoil: boolean;
+            prices?: components["schemas"]["CardPriceDto"];
+            setName?: string;
+            keyruneCode?: string;
+            /** @description Affiliate-wrapped TCGPlayer purchase URL (normal/foil) */
+            purchaseUrlTcgplayer?: string;
+            /** @description Affiliate-wrapped TCGPlayer purchase URL for etched finish */
+            purchaseUrlTcgplayerEtched?: string;
+            /** @description Whether this card is legal in the requested format. Present only in groupBy=name mode when a `format` query param is supplied. */
+            legal?: boolean;
         };
         QueryValidationErrorDto: {
             /** @example false */
@@ -1091,6 +1217,93 @@ export interface components {
              */
             allowedValues?: string[];
         };
+        BuylistOfferApiDto: {
+            /**
+             * @description Provider key (granular_price.provider)
+             * @example cardkingdom
+             */
+            provider: string;
+            /**
+             * @description Vendor display name
+             * @example Card Kingdom
+             */
+            vendor: string;
+            /**
+             * @description Buylist offer in USD (NM)
+             * @example 3.5
+             */
+            price: number;
+            /**
+             * @description Highest offer for this finish
+             * @example true
+             */
+            isBest: boolean;
+        };
+        BuylistFinishApiDto: {
+            /**
+             * @description Finish key: 'normal' | 'foil' | 'etched'
+             * @example normal
+             */
+            finish: string;
+            /** @description Highest offer for this finish */
+            best: components["schemas"]["BuylistOfferApiDto"];
+            /** @description All offers for this finish, best first */
+            offers: components["schemas"]["BuylistOfferApiDto"][];
+        };
+        CardBuylistApiResponseDto: {
+            /** @description Card id */
+            cardId: string;
+            /** @description Usable NM buylist offers grouped by finish */
+            finishes: components["schemas"]["BuylistFinishApiDto"][];
+            /** @description True when any usable offer exists */
+            hasAny: boolean;
+        };
+        PriceHistoryPointDto: {
+            date: string;
+            normal?: number;
+            foil?: number;
+        };
+        DeckSummaryApiDto: {
+            id: number;
+            name: string;
+            format?: string | null;
+            /** @description Total card count (sum of quantities, main + side). */
+            cardCount: number;
+            estimatedValue: number;
+            createdAt: string;
+            updatedAt: string;
+        };
+        DeckCardApiDto: {
+            cardId: string;
+            quantity: number;
+            isSideboard: boolean;
+            cardName?: string;
+            setCode?: string;
+            cardNumber?: string;
+            imgSrc?: string;
+            rarity?: string;
+            type?: string;
+            manaCost?: string;
+            keyruneCode?: string;
+            priceNormal?: number;
+            priceFoil?: number;
+            /** @description Whether the card is legal in the deck format. Null when the deck has no format. */
+            legalInFormat?: boolean;
+            url?: string;
+        };
+        DeckDetailApiDto: {
+            id: number;
+            name: string;
+            format?: string | null;
+            /** @description Total card count (sum of quantities, main + side). */
+            cardCount: number;
+            estimatedValue: number;
+            createdAt: string;
+            updatedAt: string;
+            /** @description Count of cards not legal in the deck format (0 when no format). */
+            illegalCount: number;
+            cards: components["schemas"]["DeckCardApiDto"][];
+        };
         DeckCreateApiDto: {
             name: string;
             /**
@@ -1098,6 +1311,15 @@ export interface components {
              * @enum {string}
              */
             format?: "standard" | "commander" | "modern" | "legacy" | "vintage" | "brawl" | "explorer" | "historic" | "oathbreaker" | "pauper" | "pioneer";
+        };
+        DeckImportApiResultDto: {
+            /** @description Id of the created deck. */
+            deckId: number;
+            name: string;
+            /** @description Total card quantity added across resolved lines. */
+            saved: number;
+            /** @description Lines that could not be parsed or resolved ({ row, name?, error }). */
+            errors: Record<string, never>[];
         };
         DeckImportApiDto: {
             name: string;
@@ -1108,6 +1330,10 @@ export interface components {
             format?: "standard" | "commander" | "modern" | "legacy" | "vintage" | "brawl" | "explorer" | "historic" | "oathbreaker" | "pauper" | "pioneer";
             /** @description Decklist text, one entry per line (e.g. "4 Lightning Bolt"). */
             text: string;
+        };
+        DeckMissingToBuyListResultDto: {
+            /** @description Count of distinct cards added to the buy-list. */
+            added: number;
         };
         DeckUpdateApiDto: {
             name: string;
@@ -1135,6 +1361,71 @@ export interface components {
             /** @default false */
             isSideboard: boolean;
         };
+        InventoryItemApiDto: {
+            cardId: string;
+            quantity: number;
+            isFoil: boolean;
+            cardName?: string;
+            setCode?: string;
+            cardNumber?: string;
+            imgSrc?: string;
+            rarity?: string;
+            keyruneCode?: string;
+            priceNormal?: number;
+            priceFoil?: number;
+            tags?: string[];
+            hasNonFoil?: boolean;
+            hasFoil?: boolean;
+            url?: string;
+        };
+        SellPlanItemApiDto: {
+            cardId: string;
+            cardName?: string;
+            setCode?: string;
+            number?: string;
+            /** @description 'normal' | 'foil' */
+            finish: string;
+            /** @description Quantity owned */
+            ownedQuantity: number;
+            /** @description Units the vendor would take (qty-capped) */
+            sellableQuantity: number;
+            /** @description True when the vendor buy quantity caps below owned */
+            quantityCapped: boolean;
+            /** @description Best NM buylist offer per unit (USD) */
+            offer: number;
+            /** @description offer * sellableQuantity (USD) */
+            payout: number;
+        };
+        SellPlanGroupApiDto: {
+            /** @example cardkingdom */
+            provider: string;
+            /** @example Card Kingdom */
+            vendor: string;
+            /** @description Sum of item payouts in this group (USD) */
+            payout: number;
+            items: components["schemas"]["SellPlanItemApiDto"][];
+        };
+        InventorySellApiResponseDto: {
+            /** @description Total market sell value across all groups (USD) */
+            totalPayout: number;
+            /** @description Inventory items with a usable offer */
+            itemsWithOffers: number;
+            /** @description Inventory items with no usable offer */
+            itemsWithoutOffers: number;
+            /** @description Sorted by payout descending */
+            groups: components["schemas"]["SellPlanGroupApiDto"][];
+        };
+        InventoryQuantityApiDto: {
+            cardId: string;
+            foilQuantity: number;
+            normalQuantity: number;
+        };
+        InventoryRequestApiDto: {
+            cardId: string;
+            /** @description Absolute quantity to set; 0 removes the row */
+            quantity: number;
+            isFoil: boolean;
+        };
         InventoryImportResponseDto: {
             /** @description Number of inventory rows saved (created or updated to exact qty) */
             saved: number;
@@ -1152,8 +1443,126 @@ export interface components {
              */
             detectedFormat?: "native" | "archidekt" | "moxfield" | "deckbox" | "tcgplayer";
         };
-        CreatePriceAlertDto: Record<string, never>;
-        UpdatePriceAlertDto: Record<string, never>;
+        InventoryDeleteApiDto: {
+            cardId: string;
+            isFoil: boolean;
+        };
+        NotificationDeviceApiDto: {
+            id: number;
+            /** @enum {string} */
+            platform: "ios" | "android" | "web";
+            deviceId?: string | null;
+            /** @description When the device was first registered. */
+            createdAt: string;
+        };
+        RegisterDeviceApiDto: {
+            /** @description The Expo/APNs/FCM push token for this device. */
+            token: string;
+            /**
+             * @description Device platform.
+             * @enum {string}
+             */
+            platform: "ios" | "android" | "web";
+            /** @description Optional client-supplied device identifier (metadata only). */
+            deviceId?: string;
+        };
+        UnregisterDeviceApiDto: {
+            /** @description The push token to remove (e.g. on sign-out). */
+            token: string;
+        };
+        PortfolioSummaryApiDto: {
+            totalValue: number;
+            totalCost?: number;
+            totalRealizedGain?: number;
+            totalCards: number;
+            totalQuantity: number;
+            computedAt: string;
+        };
+        PortfolioHistoryPointDto: {
+            date: string;
+            totalValue: number;
+            totalCost?: number;
+            totalCards: number;
+        };
+        CardPerformanceApiDto: {
+            cardId: string;
+            cardName?: string;
+            setCode?: string;
+            quantity: number;
+            costBasis: number;
+            currentValue: number;
+            gain: number;
+            roi: number;
+        };
+        CashFlowPeriodApiDto: {
+            period: string;
+            totalBought: number;
+            totalSold: number;
+            net: number;
+        };
+        BreakdownCardApiDto: {
+            cardId: string;
+            name: string;
+            setCode: string;
+            number: string;
+            /** @description Path to the card detail page */
+            cardUrl: string;
+            /** @description Full Scryfall image URL for hover preview (may be empty) */
+            imgSrc: string;
+            rarity: string;
+            /** @description Total quantity owned (foil + non-foil combined) */
+            quantity: number;
+            /** @description Combined current value across foil + non-foil */
+            value: number;
+            /** @description Pre-formatted value, e.g. "$12.34" */
+            valueFormatted: string;
+        };
+        PriceAlertApiDto: {
+            id: number;
+            cardId: string;
+            cardName?: string;
+            cardNumber?: string;
+            setCode?: string;
+            increasePct?: number;
+            decreasePct?: number;
+            isActive: boolean;
+            /** Format: date-time */
+            lastNotifiedAt?: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        CreatePriceAlertDto: {
+            /** Format: uuid */
+            cardId: string;
+            /** @description Alert when the price rises by at least this percent. At least one of increasePct/decreasePct is required. */
+            increasePct?: number;
+            /** @description Alert when the price falls by at least this percent. At least one of increasePct/decreasePct is required. */
+            decreasePct?: number;
+        };
+        UpdatePriceAlertDto: {
+            /** @description Set null to clear the rise threshold. */
+            increasePct?: number | null;
+            /** @description Set null to clear the fall threshold. */
+            decreasePct?: number | null;
+            isActive?: boolean;
+        };
+        PriceNotificationApiDto: {
+            id: number;
+            cardId: string;
+            cardName?: string;
+            cardNumber?: string;
+            setCode?: string;
+            alertId?: number;
+            direction: string;
+            oldPrice: number;
+            newPrice: number;
+            changePct: number;
+            isRead: boolean;
+            /** Format: date-time */
+            createdAt: string;
+        };
         SealedInventoryRequestDto: {
             sealedProductUuid: string;
             quantity: number;
@@ -1161,8 +1570,98 @@ export interface components {
         SealedInventoryDeleteRequestDto: {
             sealedProductUuid: string;
         };
-        TransactionRequestDto: Record<string, never>;
-        TransactionUpdateRequestDto: Record<string, never>;
+        SetPriceApiDto: {
+            basePrice?: number;
+            totalPrice?: number;
+            basePriceAll?: number;
+            totalPriceAll?: number;
+            basePriceChangeWeekly?: number;
+            totalPriceChangeWeekly?: number;
+        };
+        SetApiResponseDto: {
+            code: string;
+            name: string;
+            type: string;
+            releaseDate: string;
+            baseSize: number;
+            totalSize: number;
+            keyruneCode: string;
+            block?: string;
+            parentCode?: string;
+            isMain: boolean;
+            tags: string[];
+            prices?: components["schemas"]["SetPriceApiDto"];
+            ownedTotal?: number;
+            ownedValue?: number;
+            completionRate?: number;
+        };
+        SetPriceHistoryPointDto: {
+            date: string;
+            basePrice?: number;
+            totalPrice?: number;
+            basePriceAll?: number;
+            totalPriceAll?: number;
+        };
+        TransactionApiItemDto: {
+            id: number;
+            cardId: string;
+            type: string;
+            quantity: number;
+            pricePerUnit: number;
+            isFoil: boolean;
+            date: string;
+            source?: string;
+            fees?: number;
+            notes?: string;
+            cardName?: string;
+            setCode?: string;
+            cardUrl?: string;
+            cardNumber?: string;
+            editable?: boolean;
+        };
+        TransactionRequestDto: {
+            cardId: string;
+            /** @enum {string} */
+            type: "BUY" | "SELL";
+            quantity: number;
+            pricePerUnit: number;
+            isFoil: boolean;
+            /**
+             * Format: date
+             * @description Date-only string (YYYY-MM-DD)
+             */
+            date: string;
+            source?: string;
+            fees?: number;
+            notes?: string;
+            /** @description Don't auto-adjust inventory from this transaction */
+            skipInventorySync?: boolean;
+        };
+        TransactionUpdateRequestDto: {
+            quantity?: number;
+            pricePerUnit?: number;
+            /**
+             * Format: date
+             * @description Date-only string (YYYY-MM-DD)
+             */
+            date?: string;
+            source?: string;
+            fees?: number;
+            notes?: string;
+        };
+        CostBasisApiDto: {
+            totalCost: number;
+            totalQuantity: number;
+            averageCost: number;
+            unrealizedGain: number;
+            realizedGain: number;
+        };
+        UserApiResponseDto: {
+            id: number;
+            email: string;
+            name: string;
+            role: string;
+        };
         UpdateUserRequestDto: Record<string, never>;
         UpdatePasswordRequestDto: Record<string, never>;
         SetTypePreferenceResponseDto: {
@@ -1276,10 +1775,77 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data?: components["schemas"]["LoginResponseDto"];
+                        error?: string;
+                        message?: string;
+                        meta?: components["schemas"]["PaginationMeta"] | components["schemas"]["BlockPaginationMeta"];
+                    };
+                };
             };
             /** @description Invalid credentials */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AuthApiController_refresh: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RefreshRequestDto"];
+            };
+        };
+        responses: {
+            /** @description New access + refresh tokens */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data?: components["schemas"]["LoginResponseDto"];
+                        error?: string;
+                        message?: string;
+                        meta?: components["schemas"]["PaginationMeta"] | components["schemas"]["BlockPaginationMeta"];
+                    };
+                };
+            };
+            /** @description Invalid, revoked, or expired refresh token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AuthApiController_logout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RefreshRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Refresh token revoked */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1356,7 +1922,15 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data?: components["schemas"]["BuyListItemApiDto"][];
+                        error?: string;
+                        message?: string;
+                        meta?: components["schemas"]["PaginationMeta"] | components["schemas"]["BlockPaginationMeta"];
+                    };
+                };
             };
         };
     };
@@ -1445,7 +2019,13 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BuyListImportResponseDto"];
+                    "application/json": {
+                        success: boolean;
+                        data?: components["schemas"]["BuyListImportResponseDto"];
+                        error?: string;
+                        message?: string;
+                        meta?: components["schemas"]["PaginationMeta"] | components["schemas"]["BlockPaginationMeta"];
+                    };
                 };
             };
             /** @description Invalid CSV text */
@@ -1488,7 +2068,15 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data?: components["schemas"]["CardApiResponseDto"][];
+                        error?: string;
+                        message?: string;
+                        meta?: components["schemas"]["PaginationMeta"] | components["schemas"]["BlockPaginationMeta"];
+                    };
+                };
             };
             /** @description Invalid filter value (unknown rarity/format/legality, malformed setCode, or legality without format) */
             400: {
@@ -1517,7 +2105,15 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data?: components["schemas"]["CardApiResponseDto"];
+                        error?: string;
+                        message?: string;
+                        meta?: components["schemas"]["PaginationMeta"] | components["schemas"]["BlockPaginationMeta"];
+                    };
+                };
             };
         };
     };
@@ -1537,7 +2133,15 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data?: components["schemas"]["CardBuylistApiResponseDto"];
+                        error?: string;
+                        message?: string;
+                        meta?: components["schemas"]["PaginationMeta"] | components["schemas"]["BlockPaginationMeta"];
+                    };
+                };
             };
         };
     };
@@ -1560,7 +2164,15 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data?: components["schemas"]["PriceHistoryPointDto"][];
+                        error?: string;
+                        message?: string;
+                        meta?: components["schemas"]["PaginationMeta"] | components["schemas"]["BlockPaginationMeta"];
+                    };
+                };
             };
         };
     };
@@ -1581,7 +2193,15 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data?: components["schemas"]["CardApiResponseDto"];
+                        error?: string;
+                        message?: string;
+                        meta?: components["schemas"]["PaginationMeta"] | components["schemas"]["BlockPaginationMeta"];
+                    };
+                };
             };
             /** @description Card not found */
             404: {
@@ -1609,7 +2229,15 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data?: components["schemas"]["CardBuylistApiResponseDto"];
+                        error?: string;
+                        message?: string;
+                        meta?: components["schemas"]["PaginationMeta"] | components["schemas"]["BlockPaginationMeta"];
+                    };
+                };
             };
             /** @description Card not found */
             404: {
@@ -1640,7 +2268,15 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data?: components["schemas"]["PriceHistoryPointDto"][];
+                        error?: string;
+                        message?: string;
+                        meta?: components["schemas"]["PaginationMeta"] | components["schemas"]["BlockPaginationMeta"];
+                    };
+                };
             };
             /** @description Card not found */
             404: {
@@ -1668,7 +2304,15 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data?: components["schemas"]["CardApiResponseDto"];
+                        error?: string;
+                        message?: string;
+                        meta?: components["schemas"]["PaginationMeta"] | components["schemas"]["BlockPaginationMeta"];
+                    };
+                };
             };
             /** @description Card not found */
             404: {
@@ -1693,7 +2337,15 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data?: components["schemas"]["DeckSummaryApiDto"][];
+                        error?: string;
+                        message?: string;
+                        meta?: components["schemas"]["PaginationMeta"] | components["schemas"]["BlockPaginationMeta"];
+                    };
+                };
             };
         };
     };
@@ -1715,7 +2367,15 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data?: components["schemas"]["DeckDetailApiDto"];
+                        error?: string;
+                        message?: string;
+                        meta?: components["schemas"]["PaginationMeta"] | components["schemas"]["BlockPaginationMeta"];
+                    };
+                };
             };
         };
     };
@@ -1737,7 +2397,15 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data?: components["schemas"]["DeckImportApiResultDto"];
+                        error?: string;
+                        message?: string;
+                        meta?: components["schemas"]["PaginationMeta"] | components["schemas"]["BlockPaginationMeta"];
+                    };
+                };
             };
         };
     };
@@ -1757,7 +2425,15 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data?: components["schemas"]["DeckDetailApiDto"];
+                        error?: string;
+                        message?: string;
+                        meta?: components["schemas"]["PaginationMeta"] | components["schemas"]["BlockPaginationMeta"];
+                    };
+                };
             };
             /** @description Deck not found */
             404: {
@@ -1815,7 +2491,15 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data?: components["schemas"]["DeckSummaryApiDto"];
+                        error?: string;
+                        message?: string;
+                        meta?: components["schemas"]["PaginationMeta"] | components["schemas"]["BlockPaginationMeta"];
+                    };
+                };
             };
             /** @description Deck not found */
             404: {
@@ -1842,7 +2526,15 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data?: components["schemas"]["DeckMissingToBuyListResultDto"];
+                        error?: string;
+                        message?: string;
+                        meta?: components["schemas"]["PaginationMeta"] | components["schemas"]["BlockPaginationMeta"];
+                    };
+                };
             };
             /** @description Deck not found */
             404: {
@@ -1945,7 +2637,15 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data?: components["schemas"]["InventoryItemApiDto"][];
+                        error?: string;
+                        message?: string;
+                        meta?: components["schemas"]["PaginationMeta"] | components["schemas"]["BlockPaginationMeta"];
+                    };
+                };
             };
             /** @description Invalid sort value */
             400: {
@@ -1967,7 +2667,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": string[];
+                "application/json": components["schemas"]["InventoryRequestApiDto"][];
             };
         };
         responses: {
@@ -1976,7 +2676,15 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data?: components["schemas"]["InventoryItemApiDto"][];
+                        error?: string;
+                        message?: string;
+                        meta?: components["schemas"]["PaginationMeta"] | components["schemas"]["BlockPaginationMeta"];
+                    };
+                };
             };
         };
     };
@@ -1987,7 +2695,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InventoryDeleteApiDto"];
+            };
+        };
         responses: {
             /** @description Item deleted */
             200: {
@@ -2007,7 +2719,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": string[];
+                "application/json": components["schemas"]["InventoryRequestApiDto"][];
             };
         };
         responses: {
@@ -2016,7 +2728,15 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data?: components["schemas"]["InventoryItemApiDto"][];
+                        error?: string;
+                        message?: string;
+                        meta?: components["schemas"]["PaginationMeta"] | components["schemas"]["BlockPaginationMeta"];
+                    };
+                };
             };
         };
     };
@@ -2034,7 +2754,15 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data?: components["schemas"]["InventorySellApiResponseDto"];
+                        error?: string;
+                        message?: string;
+                        meta?: components["schemas"]["PaginationMeta"] | components["schemas"]["BlockPaginationMeta"];
+                    };
+                };
             };
         };
     };
@@ -2055,7 +2783,15 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data?: components["schemas"]["InventoryQuantityApiDto"][];
+                        error?: string;
+                        message?: string;
+                        meta?: components["schemas"]["PaginationMeta"] | components["schemas"]["BlockPaginationMeta"];
+                    };
+                };
             };
         };
     };
@@ -2084,7 +2820,13 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["InventoryImportResponseDto"];
+                    "application/json": {
+                        success: boolean;
+                        data?: components["schemas"]["InventoryImportResponseDto"];
+                        error?: string;
+                        message?: string;
+                        meta?: components["schemas"]["PaginationMeta"] | components["schemas"]["BlockPaginationMeta"];
+                    };
                 };
             };
             /** @description Missing or invalid CSV file */
@@ -2106,6 +2848,58 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description CSV body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    NotificationDeviceApiController_register: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterDeviceApiDto"];
+            };
+        };
+        responses: {
+            /** @description Device registered */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data?: components["schemas"]["NotificationDeviceApiDto"];
+                        error?: string;
+                        message?: string;
+                        meta?: components["schemas"]["PaginationMeta"] | components["schemas"]["BlockPaginationMeta"];
+                    };
+                };
+            };
+        };
+    };
+    NotificationDeviceApiController_unregister: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UnregisterDeviceApiDto"];
+            };
+        };
+        responses: {
+            /** @description Device unregistered */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -2149,7 +2943,15 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data?: components["schemas"]["PortfolioSummaryApiDto"] | null;
+                        error?: string;
+                        message?: string;
+                        meta?: components["schemas"]["PaginationMeta"] | components["schemas"]["BlockPaginationMeta"];
+                    };
+                };
             };
         };
     };
@@ -2170,7 +2972,15 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data?: components["schemas"]["PortfolioHistoryPointDto"][];
+                        error?: string;
+                        message?: string;
+                        meta?: components["schemas"]["PaginationMeta"] | components["schemas"]["BlockPaginationMeta"];
+                    };
+                };
             };
             /** @description Premium subscription required */
             403: {
@@ -2200,7 +3010,15 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data?: components["schemas"]["CardPerformanceApiDto"][];
+                        error?: string;
+                        message?: string;
+                        meta?: components["schemas"]["PaginationMeta"] | components["schemas"]["BlockPaginationMeta"];
+                    };
+                };
             };
         };
     };
@@ -2236,7 +3054,15 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data?: components["schemas"]["CashFlowPeriodApiDto"][];
+                        error?: string;
+                        message?: string;
+                        meta?: components["schemas"]["PaginationMeta"] | components["schemas"]["BlockPaginationMeta"];
+                    };
+                };
             };
             /** @description Premium subscription required */
             403: {
@@ -2316,7 +3142,15 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data?: components["schemas"]["BreakdownCardApiDto"][];
+                        error?: string;
+                        message?: string;
+                        meta?: components["schemas"]["PaginationMeta"] | components["schemas"]["BlockPaginationMeta"];
+                    };
+                };
             };
             /** @description Premium subscription required */
             403: {
@@ -2344,7 +3178,15 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data?: components["schemas"]["PriceAlertApiDto"][];
+                        error?: string;
+                        message?: string;
+                        meta?: components["schemas"]["PaginationMeta"] | components["schemas"]["BlockPaginationMeta"];
+                    };
+                };
             };
         };
     };
@@ -2366,7 +3208,15 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data?: components["schemas"]["PriceAlertApiDto"];
+                        error?: string;
+                        message?: string;
+                        meta?: components["schemas"]["PaginationMeta"] | components["schemas"]["BlockPaginationMeta"];
+                    };
+                };
             };
         };
     };
@@ -2410,7 +3260,15 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data?: components["schemas"]["PriceAlertApiDto"];
+                        error?: string;
+                        message?: string;
+                        meta?: components["schemas"]["PaginationMeta"] | components["schemas"]["BlockPaginationMeta"];
+                    };
+                };
             };
         };
     };
@@ -2451,7 +3309,15 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data?: components["schemas"]["PriceNotificationApiDto"][];
+                        error?: string;
+                        message?: string;
+                        meta?: components["schemas"]["PaginationMeta"] | components["schemas"]["BlockPaginationMeta"];
+                    };
+                };
             };
         };
     };
@@ -2696,7 +3562,15 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data?: components["schemas"]["SetApiResponseDto"][];
+                        error?: string;
+                        message?: string;
+                        meta?: components["schemas"]["PaginationMeta"] | components["schemas"]["BlockPaginationMeta"];
+                    };
+                };
             };
             /** @description Invalid sort value */
             400: {
@@ -2725,7 +3599,15 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data?: components["schemas"]["SetApiResponseDto"];
+                        error?: string;
+                        message?: string;
+                        meta?: components["schemas"]["PaginationMeta"] | components["schemas"]["BlockPaginationMeta"];
+                    };
+                };
             };
             /** @description Set not found */
             404: {
@@ -2769,7 +3651,15 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data?: components["schemas"]["CardApiResponseDto"][];
+                        error?: string;
+                        message?: string;
+                        meta?: components["schemas"]["PaginationMeta"] | components["schemas"]["BlockPaginationMeta"];
+                    };
+                };
             };
             /** @description Invalid filter value (unknown rarity/format/legality/sort) */
             400: {
@@ -2801,7 +3691,15 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data?: components["schemas"]["SetPriceHistoryPointDto"][];
+                        error?: string;
+                        message?: string;
+                        meta?: components["schemas"]["PaginationMeta"] | components["schemas"]["BlockPaginationMeta"];
+                    };
+                };
             };
         };
     };
@@ -2826,7 +3724,15 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data?: components["schemas"]["TransactionApiItemDto"][];
+                        error?: string;
+                        message?: string;
+                        meta?: components["schemas"]["PaginationMeta"] | components["schemas"]["BlockPaginationMeta"];
+                    };
+                };
             };
             /** @description Invalid sort value or transaction type */
             400: {
@@ -2857,7 +3763,15 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data?: components["schemas"]["TransactionApiItemDto"];
+                        error?: string;
+                        message?: string;
+                        meta?: components["schemas"]["PaginationMeta"] | components["schemas"]["BlockPaginationMeta"];
+                    };
+                };
             };
         };
     };
@@ -2881,7 +3795,15 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data?: components["schemas"]["TransactionApiItemDto"];
+                        error?: string;
+                        message?: string;
+                        meta?: components["schemas"]["PaginationMeta"] | components["schemas"]["BlockPaginationMeta"];
+                    };
+                };
             };
         };
     };
@@ -2924,7 +3846,15 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data?: components["schemas"]["CostBasisApiDto"];
+                        error?: string;
+                        message?: string;
+                        meta?: components["schemas"]["PaginationMeta"] | components["schemas"]["BlockPaginationMeta"];
+                    };
+                };
             };
         };
     };
@@ -2948,7 +3878,15 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data?: components["schemas"]["CostBasisApiDto"];
+                        error?: string;
+                        message?: string;
+                        meta?: components["schemas"]["PaginationMeta"] | components["schemas"]["BlockPaginationMeta"];
+                    };
+                };
             };
             /** @description Card not found */
             404: {
@@ -2973,7 +3911,15 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data?: components["schemas"]["UserApiResponseDto"];
+                        error?: string;
+                        message?: string;
+                        meta?: components["schemas"]["PaginationMeta"] | components["schemas"]["BlockPaginationMeta"];
+                    };
+                };
             };
         };
     };
@@ -3013,7 +3959,15 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data?: components["schemas"]["UserApiResponseDto"];
+                        error?: string;
+                        message?: string;
+                        meta?: components["schemas"]["PaginationMeta"] | components["schemas"]["BlockPaginationMeta"];
+                    };
+                };
             };
         };
     };
@@ -3072,7 +4026,13 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SetTypePreferenceResponseDto"];
+                    "application/json": {
+                        success: boolean;
+                        data?: components["schemas"]["SetTypePreferenceResponseDto"];
+                        error?: string;
+                        message?: string;
+                        meta?: components["schemas"]["PaginationMeta"] | components["schemas"]["BlockPaginationMeta"];
+                    };
                 };
             };
         };
@@ -3096,7 +4056,13 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SetTypePreferenceResponseDto"];
+                    "application/json": {
+                        success: boolean;
+                        data?: components["schemas"]["SetTypePreferenceResponseDto"];
+                        error?: string;
+                        message?: string;
+                        meta?: components["schemas"]["PaginationMeta"] | components["schemas"]["BlockPaginationMeta"];
+                    };
                 };
             };
         };
