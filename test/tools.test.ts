@@ -5,6 +5,10 @@ import { tools, toolsByName } from "../src/tools/index.js";
 
 type FetchCall = { url: string; init: RequestInit };
 
+// Valid UUIDs for schemas that validate cardId with z.string().uuid().
+const CARD_ID = "00000000-0000-0000-0000-0000000000aa";
+const CARD_ID_2 = "00000000-0000-0000-0000-0000000000bb";
+
 let calls: FetchCall[];
 const originalFetch = globalThis.fetch;
 
@@ -42,8 +46,9 @@ afterEach(() => {
 async function call(name: string, input: unknown) {
   const tool = toolsByName[name];
   assert.ok(tool, `tool ${name} not registered`);
-  // Skip schema parsing - we trust zod and want to assert handler wiring directly.
-  await tool.handler(input as never);
+  // Parse through the schema like the server does, so defaults, coercions,
+  // and refinements are exercised and handlers see production-shaped input.
+  await tool.handler(tool.inputSchema.parse(input));
   assert.equal(calls.length, 1, `${name} should make exactly one HTTP call`);
   return {
     url: new URL(calls[0].url),
@@ -160,14 +165,14 @@ describe("inventory tools", () => {
 
   it("get_inventory_quantities: GET with cardIds joined", async () => {
     const r = await call("get_inventory_quantities", {
-      cardIds: ["aaa-1", "bbb-2"],
+      cardIds: [CARD_ID, CARD_ID_2],
     });
     assert.equal(r.url.pathname, "/api/v1/inventory/quantities");
-    assert.equal(r.url.searchParams.get("cardIds"), "aaa-1,bbb-2");
+    assert.equal(r.url.searchParams.get("cardIds"), `${CARD_ID},${CARD_ID_2}`);
   });
 
   it("add_inventory: POST with items array body", async () => {
-    const items = [{ cardId: "abc", quantity: 4, isFoil: false }];
+    const items = [{ cardId: CARD_ID, quantity: 4, isFoil: false }];
     const r = await call("add_inventory", { items });
     assert.equal(r.method, "POST");
     assert.equal(r.url.pathname, "/api/v1/inventory");
@@ -175,16 +180,16 @@ describe("inventory tools", () => {
   });
 
   it("update_inventory: PATCH with items array body", async () => {
-    const items = [{ cardId: "abc", quantity: 2, isFoil: true }];
+    const items = [{ cardId: CARD_ID, quantity: 2, isFoil: true }];
     const r = await call("update_inventory", { items });
     assert.equal(r.method, "PATCH");
     assert.equal(r.body, JSON.stringify(items));
   });
 
   it("remove_inventory: DELETE with object body", async () => {
-    const r = await call("remove_inventory", { cardId: "abc", isFoil: false });
+    const r = await call("remove_inventory", { cardId: CARD_ID, isFoil: false });
     assert.equal(r.method, "DELETE");
-    assert.equal(r.body, JSON.stringify({ cardId: "abc", isFoil: false }));
+    assert.equal(r.body, JSON.stringify({ cardId: CARD_ID, isFoil: false }));
   });
 });
 
@@ -395,9 +400,9 @@ describe("price alert tools", () => {
   });
 
   it("create_price_alert: POST with body", async () => {
-    const r = await call("create_price_alert", { cardId: "abc", increasePct: 10 });
+    const r = await call("create_price_alert", { cardId: CARD_ID, increasePct: 10 });
     assert.equal(r.method, "POST");
-    assert.equal(r.body, JSON.stringify({ cardId: "abc", increasePct: 10 }));
+    assert.equal(r.body, JSON.stringify({ cardId: CARD_ID, increasePct: 10 }));
   });
 
   it("update_price_alert: PATCH /api/v1/price-alerts/{id} with patch body excluding id", async () => {
@@ -405,6 +410,13 @@ describe("price alert tools", () => {
     assert.equal(r.method, "PATCH");
     assert.equal(r.url.pathname, "/api/v1/price-alerts/1");
     assert.equal(r.body, JSON.stringify({ isActive: false }));
+  });
+
+  it("update_price_alert: rejects a patch with no fields", () => {
+    assert.throws(
+      () => toolsByName["update_price_alert"].inputSchema.parse({ id: 1 }),
+      /at least one/i,
+    );
   });
 
   it("delete_price_alert: DELETE /api/v1/price-alerts/{id}", async () => {
@@ -474,11 +486,11 @@ describe("buy-list tools", () => {
   });
 
   it("add_buy_list: POST /api/v1/buy-list, defaulting isFoil/quantity", async () => {
-    const r = await call("add_buy_list", { cardId: "abc" });
+    const r = await call("add_buy_list", { cardId: CARD_ID });
     assert.equal(r.method, "POST");
     assert.equal(r.url.pathname, "/api/v1/buy-list");
     assert.deepEqual(JSON.parse(r.body as string), {
-      cardId: "abc",
+      cardId: CARD_ID,
       isFoil: false,
       quantity: 1,
     });
@@ -486,11 +498,11 @@ describe("buy-list tools", () => {
   });
 
   it("update_buy_list: PATCH /api/v1/buy-list with the absolute quantity", async () => {
-    const r = await call("update_buy_list", { cardId: "abc", isFoil: true, quantity: 0 });
+    const r = await call("update_buy_list", { cardId: CARD_ID, isFoil: true, quantity: 0 });
     assert.equal(r.method, "PATCH");
     assert.equal(r.url.pathname, "/api/v1/buy-list");
     assert.deepEqual(JSON.parse(r.body as string), {
-      cardId: "abc",
+      cardId: CARD_ID,
       isFoil: true,
       quantity: 0,
     });
@@ -498,10 +510,10 @@ describe("buy-list tools", () => {
   });
 
   it("remove_buy_list: DELETE /api/v1/buy-list", async () => {
-    const r = await call("remove_buy_list", { cardId: "abc" });
+    const r = await call("remove_buy_list", { cardId: CARD_ID });
     assert.equal(r.method, "DELETE");
     assert.equal(r.url.pathname, "/api/v1/buy-list");
-    assert.deepEqual(JSON.parse(r.body as string), { cardId: "abc", isFoil: false });
+    assert.deepEqual(JSON.parse(r.body as string), { cardId: CARD_ID, isFoil: false });
     assert.equal(r.headers.get("Authorization"), "Bearer iwm_live_test");
   });
 
