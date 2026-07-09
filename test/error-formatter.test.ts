@@ -20,6 +20,14 @@ describe("extractApiMessage", () => {
     assert.equal(extractApiMessage(body), "Bad Request");
   });
 
+  // The IWMM web API's actual error envelope (post W1 overhaul): every error
+  // response is { success: false, error: "<message>" } with no `message` field,
+  // so the domain message must come through the `error` fallback.
+  it("reads the message from the IWMM { success, error } envelope", () => {
+    const body = JSON.stringify({ success: false, error: "Card with set code X and number 1 not found" });
+    assert.equal(extractApiMessage(body), "Card with set code X and number 1 not found");
+  });
+
   it("returns undefined for non-JSON bodies", () => {
     assert.equal(extractApiMessage("plain text"), undefined);
   });
