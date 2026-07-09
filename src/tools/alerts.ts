@@ -41,12 +41,17 @@ export const updateAlertTool = {
   name: "update_price_alert",
   description:
     "Update an existing price alert. Pass null for a threshold to clear it (Premium only - free users must keep exactly one direction). isActive toggles enable/disable without deleting. Requires IWMM_API_KEY.",
-  inputSchema: z.object({
-    id: z.coerce.number().int().describe("Alert ID from list_price_alerts."),
-    increasePct: z.number().min(0.01).nullable().optional(),
-    decreasePct: z.number().min(0.01).nullable().optional(),
-    isActive: z.boolean().optional(),
-  }),
+  inputSchema: z
+    .object({
+      id: z.coerce.number().int().describe("Alert ID from list_price_alerts."),
+      increasePct: z.number().min(0.01).nullable().optional(),
+      decreasePct: z.number().min(0.01).nullable().optional(),
+      isActive: z.boolean().optional(),
+    })
+    .refine(
+      (v) => v.increasePct !== undefined || v.decreasePct !== undefined || v.isActive !== undefined,
+      { message: "Provide at least one of increasePct, decreasePct, or isActive." },
+    ),
   handler: async ({ id, ...patch }: { id: number } & Record<string, unknown>) => {
     const { data, error } = await apiClient.PATCH("/api/v1/price-alerts/{id}", {
       params: { path: { id } },

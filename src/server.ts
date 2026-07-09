@@ -26,7 +26,10 @@ export async function startServer() {
     tools: tools.map((t) => ({
       name: t.name,
       description: t.description,
-      inputSchema: zodToJsonSchema(t.inputSchema, { target: "openApi3" }) as Record<string, unknown>,
+      // Default (jsonSchema7) target: MCP inputSchema is JSON Schema, and the
+      // openApi3 target's `nullable: true` breaks clients that validate
+      // strictly (nullable fields like update_price_alert's thresholds).
+      inputSchema: zodToJsonSchema(t.inputSchema) as Record<string, unknown>,
     })),
   }));
 
@@ -54,8 +57,17 @@ export async function startServer() {
 
     try {
       const result = await tool.handler(args.data);
+      // Strings (e.g. CSV exports) pass through unencoded; empty-body
+      // responses (204s) resolve undefined, which JSON.stringify would turn
+      // into a text block with no `text` field - invalid MCP content.
+      const text =
+        result === undefined
+          ? "OK"
+          : typeof result === "string"
+            ? result
+            : JSON.stringify(result, null, 2);
       return {
-        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+        content: [{ type: "text", text }],
       };
     } catch (err) {
       return { isError: true, content: [{ type: "text", text: formatError(err) }] };
