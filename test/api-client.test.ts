@@ -1,7 +1,7 @@
-import { describe, it, beforeEach, afterEach } from "node:test";
 import assert from "node:assert/strict";
+import { afterEach, beforeEach, describe, it } from "node:test";
 
-import { apiClient, ApiError, AUTH_HEADERS, unwrap } from "../src/api-client.js";
+import { AUTH_HEADERS, ApiError, apiClient, unwrap } from "../src/api-client.js";
 
 type FetchCall = { request: Request; body?: string };
 

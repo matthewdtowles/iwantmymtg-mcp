@@ -1,8 +1,8 @@
-import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { describe, it } from "node:test";
 
 import { ApiError } from "../src/api-client.js";
-import { formatApiError, formatError, extractApiMessage } from "../src/error-formatter.js";
+import { extractApiMessage, formatApiError, formatError } from "../src/error-formatter.js";
 
 describe("extractApiMessage", () => {
   it("returns the message field from a NestJS-style error body", () => {
