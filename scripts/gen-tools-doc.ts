@@ -11,8 +11,8 @@
  * truth; see src/tools/types.ts).
  */
 import { readFileSync, writeFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { tools } from "../src/tools/index.js";
 
 const OUT = resolve(dirname(fileURLToPath(import.meta.url)), "../docs/TOOLS.md");
