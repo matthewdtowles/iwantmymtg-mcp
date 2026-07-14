@@ -4,8 +4,14 @@ import { defineTool } from "./types.js";
 
 const inventoryItem = z.object({
   cardId: z.string().uuid().describe("Internal IWMM card UUID. Get from search_cards or get_card."),
-  quantity: z.number().int().min(0).describe("Total quantity for this card+finish. 0 removes the row."),
-  isFoil: z.boolean().describe("Whether this is the foil variant. Foil and non-foil are tracked as separate rows."),
+  quantity: z
+    .number()
+    .int()
+    .min(0)
+    .describe("Total quantity for this card+finish. 0 removes the row."),
+  isFoil: z
+    .boolean()
+    .describe("Whether this is the foil variant. Foil and non-foil are tracked as separate rows."),
 });
 
 export const listInventoryTool = defineTool({

@@ -142,7 +142,10 @@ describe("unwrap", () => {
 
   it("rethrows an ApiError unchanged", () => {
     const apiErr = new ApiError(404, "not found");
-    assert.throws(() => unwrap(undefined, apiErr), (err) => err === apiErr);
+    assert.throws(
+      () => unwrap(undefined, apiErr),
+      (err) => err === apiErr,
+    );
   });
 
   it("wraps a non-Error throw in an Error", () => {

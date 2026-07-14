@@ -6,12 +6,11 @@ export const searchCardsInputSchema = {
   q: z
     .string()
     .optional()
-    .describe("Substring to search card name + flavor name. Optional; omit to filter purely by setCode/rarity/type/format."),
+    .describe(
+      "Substring to search card name + flavor name. Optional; omit to filter purely by setCode/rarity/type/format.",
+    ),
   setCode: z.string().optional().describe("3-5 character set code (e.g. 'lea', 'mh3')."),
-  rarity: z
-    .enum(["common", "uncommon", "rare", "mythic"])
-    .optional()
-    .describe("Filter by rarity."),
+  rarity: z.enum(["common", "uncommon", "rare", "mythic"]).optional().describe("Filter by rarity."),
   type: z
     .string()
     .optional()

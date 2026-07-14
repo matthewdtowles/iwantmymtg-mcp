@@ -7,13 +7,28 @@ on:
     branches: [main]
 
 jobs:
-  test:
+  lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # Test the floor `engines` promises (>=20) as well as current.
+        node-version: [20, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
           cache: npm
       - run: npm ci
       # Build against the committed OpenAPI types so PR CI is deterministic and
@@ -29,7 +44,7 @@ jobs:
   # of truth; package.json stays at its 0.0.0-dev placeholder and is stamped at
   # publish time.
   version:
-    needs: test
+    needs: [test, lint]
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     outputs:

@@ -4,16 +4,19 @@ import { defineTool } from "./types.js";
 
 export const getCardInputSchema = {
   setCode: z.string().describe("Set code (e.g. 'lea')."),
-  setNumber: z.string().describe("Collector number within the set (e.g. '161'). String, not int - some sets use suffixes like '12a'."),
+  setNumber: z
+    .string()
+    .describe(
+      "Collector number within the set (e.g. '161'). String, not int - some sets use suffixes like '12a'.",
+    ),
 };
 
 type CardKey = { setCode: string; setNumber: string };
 
 export async function getCard(input: CardKey) {
-  const { data, error } = await apiClient.GET(
-    "/api/v1/cards/{setCode}/{setNumber}",
-    { params: { path: input } },
-  );
+  const { data, error } = await apiClient.GET("/api/v1/cards/{setCode}/{setNumber}", {
+    params: { path: input },
+  });
   return unwrap(data, error);
 }
 
@@ -34,10 +37,9 @@ export const getCardPricesTool = defineTool({
   description: "Get current normal and foil prices for a specific card printing.",
   inputSchema: z.object(getCardInputSchema),
   handler: async (input: CardKey) => {
-    const { data, error } = await apiClient.GET(
-      "/api/v1/cards/{setCode}/{setNumber}/prices",
-      { params: { path: input } },
-    );
+    const { data, error } = await apiClient.GET("/api/v1/cards/{setCode}/{setNumber}/prices", {
+      params: { path: input },
+    });
     return unwrap(data, error);
   },
 });

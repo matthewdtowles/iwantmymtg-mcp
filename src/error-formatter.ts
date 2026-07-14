@@ -11,7 +11,7 @@ export function formatApiError(err: ApiError): string {
   const apiMessage = extractApiMessage(err.body);
 
   if (err.status === 401) {
-    return `Not authenticated. Set IWMM_API_KEY to your iwm_live_... key from https://iwantmymtg.net/user/api-keys.`;
+    return "Not authenticated. Set IWMM_API_KEY to your iwm_live_... key from https://iwantmymtg.net/user/api-keys.";
   }
 
   if (err.status === 402 || err.status === 403) {
