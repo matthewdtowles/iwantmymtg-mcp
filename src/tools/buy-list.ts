@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { apiClient, AUTH_HEADERS, unwrap } from "../api-client.js";
+import { defineTool } from "./types.js";
 
 /**
  * Buy-list (want-list) management (#9). Per-user list of cards a user wants to
@@ -17,10 +18,12 @@ const isFoil = z
   .optional()
   .describe("Whether this is the foil variant. Foil and non-foil are separate rows. Defaults to false.");
 
-export const listBuyListTool = {
+export const listBuyListTool = defineTool({
   name: "list_buy_list",
+  requiresAuth: true,
+  readOnly: true,
   description:
-    "List the authenticated user's buy-list (want-list): the cards they want to acquire, with quantities, finish, and current prices. Requires IWMM_API_KEY.",
+    "List the authenticated user's buy-list (want-list): the cards they want to acquire, with quantities, finish, and current prices.",
   inputSchema: z.object({}),
   handler: async () => {
     const { data, error } = await apiClient.GET("/api/v1/buy-list", {
@@ -28,12 +31,13 @@ export const listBuyListTool = {
     });
     return unwrap(data, error);
   },
-};
+});
 
-export const addBuyListTool = {
+export const addBuyListTool = defineTool({
   name: "add_buy_list",
+  requiresAuth: true,
   description:
-    "Add a card to the authenticated user's buy-list, incrementing the quantity (creates the row if absent). This is a real write. Use update_buy_list to set an absolute quantity or remove_buy_list to delete a row. Requires IWMM_API_KEY.",
+    "Add a card to the authenticated user's buy-list, incrementing the quantity (creates the row if absent). This is a real write. Use update_buy_list to set an absolute quantity or remove_buy_list to delete a row.",
   inputSchema: z.object({
     cardId,
     isFoil,
@@ -55,12 +59,13 @@ export const addBuyListTool = {
     });
     return unwrap(data, error);
   },
-};
+});
 
-export const updateBuyListTool = {
+export const updateBuyListTool = defineTool({
   name: "update_buy_list",
+  requiresAuth: true,
   description:
-    "Set the absolute quantity for a buy-list card+finish (not a delta). A quantity of 0 removes the row. Use add_buy_list to increment instead. Requires IWMM_API_KEY.",
+    "Set the absolute quantity for a buy-list card+finish (not a delta). A quantity of 0 removes the row. Use add_buy_list to increment instead.",
   inputSchema: z.object({
     cardId,
     isFoil,
@@ -81,12 +86,14 @@ export const updateBuyListTool = {
     });
     return unwrap(data, error);
   },
-};
+});
 
-export const removeBuyListTool = {
+export const removeBuyListTool = defineTool({
   name: "remove_buy_list",
+  requiresAuth: true,
+  destructive: true,
   description:
-    "Remove a card+finish row from the authenticated user's buy-list entirely. Requires IWMM_API_KEY.",
+    "Remove a card+finish row from the authenticated user's buy-list entirely.",
   inputSchema: z.object({ cardId, isFoil }),
   handler: async (input: { cardId: string; isFoil?: boolean }) => {
     const { data, error } = await apiClient.DELETE("/api/v1/buy-list", {
@@ -95,12 +102,13 @@ export const removeBuyListTool = {
     });
     return unwrap(data, error);
   },
-};
+});
 
-export const importBuyListTool = {
+export const importBuyListTool = defineTool({
   name: "import_buy_list",
+  requiresAuth: true,
   description:
-    "Bulk-add cards to the authenticated user's buy-list from pasted CSV text. Native format header: name,set_code,number[,quantity][,foil]. External exports (Moxfield, Archidekt, Deckbox, TCGPlayer) are auto-detected. Returns counts and per-row errors. Requires IWMM_API_KEY.",
+    "Bulk-add cards to the authenticated user's buy-list from pasted CSV text. Native format header: name,set_code,number[,quantity][,foil]. External exports (Moxfield, Archidekt, Deckbox, TCGPlayer) are auto-detected. Returns counts and per-row errors.",
   inputSchema: z.object({
     text: z.string().min(1).describe("CSV text including a header row."),
   }),
@@ -111,4 +119,4 @@ export const importBuyListTool = {
     });
     return unwrap(data, error);
   },
-};
+});

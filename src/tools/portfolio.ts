@@ -1,10 +1,13 @@
 import { z } from "zod";
 import { apiClient, AUTH_HEADERS, unwrap } from "../api-client.js";
+import { defineTool } from "./types.js";
 
-export const getPortfolioSummaryTool = {
+export const getPortfolioSummaryTool = defineTool({
   name: "get_portfolio_summary",
+  requiresAuth: true,
+  readOnly: true,
   description:
-    "Get the authenticated user's portfolio summary - current value, total invested, unrealized P&L, ROI, card/unit counts. Free tier sees current value + total invested only; Premium gets the full P&L set. Requires IWMM_API_KEY.",
+    "Get the authenticated user's portfolio summary - current value, total invested, unrealized P&L, ROI, card/unit counts. Free tier sees current value + total invested only; Premium gets the full P&L set.",
   inputSchema: z.object({}),
   handler: async () => {
     const { data, error } = await apiClient.GET("/api/v1/portfolio", {
@@ -12,12 +15,14 @@ export const getPortfolioSummaryTool = {
     });
     return unwrap(data, error);
   },
-};
+});
 
-export const getPortfolioHistoryTool = {
+export const getPortfolioHistoryTool = defineTool({
   name: "get_portfolio_history",
+  requiresAuth: true,
+  readOnly: true,
   description:
-    "Get portfolio value history. Premium-gated - free tier receives 403. Requires IWMM_API_KEY.",
+    "Get portfolio value history. Premium-gated - free tier receives 403.",
   inputSchema: z.object({
     days: z.number().int().min(1).max(3650).optional().describe("How many days of history. Server default applies if omitted."),
   }),
@@ -28,12 +33,14 @@ export const getPortfolioHistoryTool = {
     });
     return unwrap(data, error);
   },
-};
+});
 
-export const getCardPerformanceTool = {
+export const getCardPerformanceTool = defineTool({
   name: "get_card_performance",
+  requiresAuth: true,
+  readOnly: true,
   description:
-    "Get the user's best- or worst-performing cards by P&L. Default: best, top 10. Premium-gated. Requires IWMM_API_KEY.",
+    "Get the user's best- or worst-performing cards by P&L. Default: best, top 10. Premium-gated.",
   inputSchema: z.object({
     type: z.enum(["best", "worst"]).optional(),
     limit: z.number().int().min(1).max(100).optional(),
@@ -45,12 +52,14 @@ export const getCardPerformanceTool = {
     });
     return unwrap(data, error);
   },
-};
+});
 
-export const getCashFlowTool = {
+export const getCashFlowTool = defineTool({
   name: "get_cash_flow",
+  requiresAuth: true,
+  readOnly: true,
   description:
-    "Get the user's cash flow (money in vs money out from BUY/SELL transactions). Premium-gated. Requires IWMM_API_KEY.",
+    "Get the user's cash flow (money in vs money out from BUY/SELL transactions). Premium-gated.",
   inputSchema: z.object({}),
   handler: async () => {
     const { data, error } = await apiClient.GET("/api/v1/portfolio/cash-flow", {
@@ -58,12 +67,14 @@ export const getCashFlowTool = {
     });
     return unwrap(data, error);
   },
-};
+});
 
-export const getRealizedGainsTool = {
+export const getRealizedGainsTool = defineTool({
   name: "get_realized_gains",
+  requiresAuth: true,
+  readOnly: true,
   description:
-    "Get the user's realized gains from SELL transactions using FIFO cost basis. Premium-gated. Requires IWMM_API_KEY.",
+    "Get the user's realized gains from SELL transactions using FIFO cost basis. Premium-gated.",
   inputSchema: z.object({}),
   handler: async () => {
     const { data, error } = await apiClient.GET("/api/v1/portfolio/realized-gains", {
@@ -71,12 +82,14 @@ export const getRealizedGainsTool = {
     });
     return unwrap(data, error);
   },
-};
+});
 
-export const getPortfolioBreakdownTool = {
+export const getPortfolioBreakdownTool = defineTool({
   name: "get_portfolio_breakdown",
+  requiresAuth: true,
+  readOnly: true,
   description:
-    "Get the user's collection value broken down by a dimension into slices (each with value, count, and share). Premium-gated. Use get_portfolio_breakdown_cards to drill into one slice. Requires IWMM_API_KEY.",
+    "Get the user's collection value broken down by a dimension into slices (each with value, count, and share). Premium-gated. Use get_portfolio_breakdown_cards to drill into one slice.",
   inputSchema: z.object({
     by: z
       .enum(["set", "rarity", "type", "color", "cost-basis"])
@@ -96,12 +109,14 @@ export const getPortfolioBreakdownTool = {
     });
     return unwrap(data, error);
   },
-};
+});
 
-export const getPortfolioBreakdownCardsTool = {
+export const getPortfolioBreakdownCardsTool = defineTool({
   name: "get_portfolio_breakdown_cards",
+  requiresAuth: true,
+  readOnly: true,
   description:
-    "Get the cards inside one slice of a portfolio breakdown (the drill-down for get_portfolio_breakdown). Premium-gated. Requires IWMM_API_KEY.",
+    "Get the cards inside one slice of a portfolio breakdown (the drill-down for get_portfolio_breakdown). Premium-gated.",
   inputSchema: z.object({
     by: z
       .enum(["set", "rarity", "type", "color", "cost-basis"])
@@ -124,12 +139,13 @@ export const getPortfolioBreakdownCardsTool = {
     });
     return unwrap(data, error);
   },
-};
+});
 
-export const refreshPortfolioTool = {
+export const refreshPortfolioTool = defineTool({
   name: "refresh_portfolio",
+  requiresAuth: true,
   description:
-    "Recalculate the user's portfolio P&L. Use after recording a batch of transactions if you want immediate fresh numbers. Requires IWMM_API_KEY.",
+    "Recalculate the user's portfolio P&L. Use after recording a batch of transactions if you want immediate fresh numbers.",
   inputSchema: z.object({}),
   handler: async () => {
     const { data, error } = await apiClient.POST("/api/v1/portfolio/refresh", {
@@ -137,4 +153,4 @@ export const refreshPortfolioTool = {
     });
     return unwrap(data, error);
   },
-};
+});

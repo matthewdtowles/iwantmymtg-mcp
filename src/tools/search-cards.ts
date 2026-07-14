@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { apiClient, unwrap } from "../api-client.js";
+import { defineTool } from "./types.js";
 
 export const searchCardsInputSchema = {
   q: z
@@ -36,10 +37,12 @@ export async function searchCards(input: Record<string, unknown>) {
   return unwrap(data, error);
 }
 
-export const searchCardsTool = {
+export const searchCardsTool = defineTool({
   name: "search_cards",
+  requiresAuth: false,
+  readOnly: true,
   description:
     "Search Magic: The Gathering cards by name (substring), set code, rarity, type, or format legality. Returns a paginated list with prices and basic metadata. Use this for catalog lookups; for a specific printing prefer get_card with set+number.",
   inputSchema: z.object(searchCardsInputSchema),
   handler: searchCards,
-};
+});
