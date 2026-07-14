@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { apiClient, AUTH_HEADERS, unwrap } from "../api-client.js";
+import { AUTH_HEADERS, apiClient, unwrap } from "../api-client.js";
+import { idParam } from "./schemas.js";
 import { defineTool } from "./types.js";
 
 const thresholdRefinement = (v: { increasePct?: number | null; decreasePct?: number | null }) =>
@@ -58,7 +59,7 @@ export const updateAlertTool = defineTool({
     "Update an existing price alert. Pass null for a threshold to clear it (Premium only - free users must keep exactly one direction). isActive toggles enable/disable without deleting.",
   inputSchema: z
     .object({
-      id: z.coerce.number().int().describe("Alert ID from list_price_alerts."),
+      id: idParam.describe("Alert ID from list_price_alerts."),
       increasePct: z.number().min(0.01).nullable().optional(),
       decreasePct: z.number().min(0.01).nullable().optional(),
       isActive: z.boolean().optional(),
@@ -82,7 +83,7 @@ export const deleteAlertTool = defineTool({
   requiresAuth: true,
   destructive: true,
   description: "Delete a price alert by ID.",
-  inputSchema: z.object({ id: z.coerce.number().int() }),
+  inputSchema: z.object({ id: idParam }),
   handler: async ({ id }: { id: number }) => {
     const { data, error } = await apiClient.DELETE("/api/v1/price-alerts/{id}", {
       params: { path: { id } },

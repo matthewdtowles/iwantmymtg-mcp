@@ -1,9 +1,10 @@
 import { z } from "zod";
-import { apiClient, AUTH_HEADERS, unwrap } from "../api-client.js";
+import { AUTH_HEADERS, apiClient, unwrap } from "../api-client.js";
+import { cardIdSchema, limitParam, pageParam } from "./schemas.js";
 import { defineTool } from "./types.js";
 
 const inventoryItem = z.object({
-  cardId: z.string().uuid().describe("Internal IWMM card UUID. Get from search_cards or get_card."),
+  cardId: cardIdSchema.describe("Internal IWMM card UUID. Get from search_cards or get_card."),
   quantity: z
     .number()
     .int()
@@ -21,8 +22,8 @@ export const listInventoryTool = defineTool({
   description:
     "List the authenticated user's card inventory, paginated. Returns cards with quantities, prices, and metadata.",
   inputSchema: z.object({
-    page: z.number().int().min(1).optional(),
-    limit: z.number().int().min(1).max(100).optional(),
+    page: pageParam.optional(),
+    limit: limitParam.optional(),
   }),
   handler: async (input: Record<string, unknown>) => {
     const { data, error } = await apiClient.GET("/api/v1/inventory", {

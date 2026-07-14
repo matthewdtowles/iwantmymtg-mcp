@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { apiClient, AUTH_HEADERS, unwrap } from "../api-client.js";
+import { AUTH_HEADERS, apiClient, unwrap } from "../api-client.js";
 import { defineTool } from "./types.js";
 
 export const getPortfolioSummaryTool = defineTool({

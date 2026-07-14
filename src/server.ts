@@ -1,13 +1,13 @@
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
-  type CallToolResult,
   CallToolRequestSchema,
+  type CallToolResult,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 import { zodToJsonSchema } from "zod-to-json-schema";
-import { tools, toolsByName } from "./tools/index.js";
 import { formatError } from "./error-formatter.js";
+import { tools, toolsByName } from "./tools/index.js";
 import { VERSION } from "./version.js";
 
 /** Build the `ListTools` response from the registry. */
