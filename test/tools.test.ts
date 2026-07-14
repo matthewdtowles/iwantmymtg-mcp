@@ -139,7 +139,7 @@ describe("tool registry", () => {
 
   it("every tool has a non-empty description and zod input schema", () => {
     for (const t of tools) {
-      assert.ok(t.name, `tool missing name`);
+      assert.ok(t.name, "tool missing name");
       assert.ok(t.description && t.description.length > 10, `${t.name}: description too short`);
       assert.ok(t.inputSchema, `${t.name}: no inputSchema`);
       assert.equal(typeof t.handler, "function", `${t.name}: handler is not a function`);
@@ -515,7 +515,7 @@ describe("price alert tools", () => {
 
   it("update_price_alert: rejects a patch with no fields", () => {
     assert.throws(
-      () => toolsByName["update_price_alert"].inputSchema.parse({ id: 1 }),
+      () => toolsByName.update_price_alert.inputSchema.parse({ id: 1 }),
       /at least one/i,
     );
   });

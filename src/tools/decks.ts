@@ -23,16 +23,9 @@ const FORMATS = [
   "pioneer",
 ] as const;
 
-const format = z
-  .enum(FORMATS)
-  .optional()
-  .describe("Target format. Omit for no format.");
+const format = z.enum(FORMATS).optional().describe("Target format. Omit for no format.");
 
-const deckId = z
-  .number()
-  .int()
-  .min(1)
-  .describe("Deck id. Get from list_decks or create_deck.");
+const deckId = z.number().int().min(1).describe("Deck id. Get from list_decks or create_deck.");
 
 const cardId = z
   .string()
@@ -42,12 +35,13 @@ const cardId = z
 const isSideboard = z
   .boolean()
   .optional()
-  .describe("Whether the card belongs to the sideboard. Mainboard and sideboard are separate rows. Defaults to false.");
+  .describe(
+    "Whether the card belongs to the sideboard. Mainboard and sideboard are separate rows. Defaults to false.",
+  );
 
 export const listDecksTool = defineTool({
   name: "list_decks",
-  description:
-    "List the authenticated user's decks (summaries: id, name, format, card counts).",
+  description: "List the authenticated user's decks (summaries: id, name, format, card counts).",
   requiresAuth: true,
   readOnly: true,
   inputSchema: z.object({}),
@@ -154,12 +148,7 @@ export const addDeckCardTool = defineTool({
     deckId,
     cardId,
     isSideboard,
-    quantity: z
-      .number()
-      .int()
-      .min(1)
-      .optional()
-      .describe("How many to add. Defaults to 1."),
+    quantity: z.number().int().min(1).optional().describe("How many to add. Defaults to 1."),
   }),
   handler: async (input) => {
     const { data, error } = await apiClient.POST("/api/v1/decks/{id}/cards", {
@@ -186,11 +175,7 @@ export const setDeckCardQuantityTool = defineTool({
     isSideboard: z
       .boolean()
       .describe("Which board the row belongs to. Mainboard and sideboard are separate rows."),
-    quantity: z
-      .number()
-      .int()
-      .min(0)
-      .describe("Absolute quantity to set. 0 removes the row."),
+    quantity: z.number().int().min(0).describe("Absolute quantity to set. 0 removes the row."),
   }),
   handler: async (input) => {
     const { data, error } = await apiClient.PATCH("/api/v1/decks/{id}/cards", {
@@ -235,13 +220,10 @@ export const deckMissingToBuyListTool = defineTool({
   requiresAuth: true,
   inputSchema: z.object({ deckId }),
   handler: async ({ deckId }) => {
-    const { data, error } = await apiClient.POST(
-      "/api/v1/decks/{id}/missing-to-buy-list",
-      {
-        params: { path: { id: deckId } },
-        headers: AUTH_HEADERS,
-      },
-    );
+    const { data, error } = await apiClient.POST("/api/v1/decks/{id}/missing-to-buy-list", {
+      params: { path: { id: deckId } },
+      headers: AUTH_HEADERS,
+    });
     return unwrap(data, error);
   },
 });

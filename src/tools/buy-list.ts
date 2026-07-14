@@ -16,7 +16,9 @@ const cardId = z
 const isFoil = z
   .boolean()
   .optional()
-  .describe("Whether this is the foil variant. Foil and non-foil are separate rows. Defaults to false.");
+  .describe(
+    "Whether this is the foil variant. Foil and non-foil are separate rows. Defaults to false.",
+  );
 
 export const listBuyListTool = defineTool({
   name: "list_buy_list",
@@ -41,12 +43,7 @@ export const addBuyListTool = defineTool({
   inputSchema: z.object({
     cardId,
     isFoil,
-    quantity: z
-      .number()
-      .int()
-      .min(1)
-      .optional()
-      .describe("How many to add. Defaults to 1."),
+    quantity: z.number().int().min(1).optional().describe("How many to add. Defaults to 1."),
   }),
   handler: async (input: { cardId: string; isFoil?: boolean; quantity?: number }) => {
     const { data, error } = await apiClient.POST("/api/v1/buy-list", {
@@ -69,11 +66,7 @@ export const updateBuyListTool = defineTool({
   inputSchema: z.object({
     cardId,
     isFoil,
-    quantity: z
-      .number()
-      .int()
-      .min(0)
-      .describe("Absolute quantity to set. 0 removes the row."),
+    quantity: z.number().int().min(0).describe("Absolute quantity to set. 0 removes the row."),
   }),
   handler: async (input: { cardId: string; isFoil?: boolean; quantity: number }) => {
     const { data, error } = await apiClient.PATCH("/api/v1/buy-list", {
@@ -92,8 +85,7 @@ export const removeBuyListTool = defineTool({
   name: "remove_buy_list",
   requiresAuth: true,
   destructive: true,
-  description:
-    "Remove a card+finish row from the authenticated user's buy-list entirely.",
+  description: "Remove a card+finish row from the authenticated user's buy-list entirely.",
   inputSchema: z.object({ cardId, isFoil }),
   handler: async (input: { cardId: string; isFoil?: boolean }) => {
     const { data, error } = await apiClient.DELETE("/api/v1/buy-list", {

@@ -21,10 +21,9 @@ export const getCardBuylistTool = defineTool({
       .describe("Collector number within the set (e.g. '161'). String, not int."),
   }),
   handler: async (input: { setCode: string; setNumber: string }) => {
-    const { data, error } = await apiClient.GET(
-      "/api/v1/cards/{setCode}/{setNumber}/buylist",
-      { params: { path: input } },
-    );
+    const { data, error } = await apiClient.GET("/api/v1/cards/{setCode}/{setNumber}/buylist", {
+      params: { path: input },
+    });
     return unwrap(data, error);
   },
 });

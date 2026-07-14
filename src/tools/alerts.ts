@@ -28,10 +28,20 @@ export const createAlertTool = defineTool({
   inputSchema: z
     .object({
       cardId: z.string().uuid().describe("Internal IWMM card UUID."),
-      increasePct: z.number().min(0.01).optional().describe("Trigger when price increases by at least this percent."),
-      decreasePct: z.number().min(0.01).optional().describe("Trigger when price decreases by at least this percent."),
+      increasePct: z
+        .number()
+        .min(0.01)
+        .optional()
+        .describe("Trigger when price increases by at least this percent."),
+      decreasePct: z
+        .number()
+        .min(0.01)
+        .optional()
+        .describe("Trigger when price decreases by at least this percent."),
     })
-    .refine(thresholdRefinement, { message: "Provide at least one of increasePct or decreasePct." }),
+    .refine(thresholdRefinement, {
+      message: "Provide at least one of increasePct or decreasePct.",
+    }),
   handler: async (input: { cardId: string; increasePct?: number; decreasePct?: number }) => {
     const { data, error } = await apiClient.POST("/api/v1/price-alerts", {
       body: input as never,

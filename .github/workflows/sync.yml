@@ -52,7 +52,7 @@ jobs:
           git checkout -b "$BRANCH"
           git add src/generated/api-types.ts docs/TOOLS.md
           git commit -m "chore: sync generated OpenAPI types and tool docs"
-          git push -u origin "$BRANCH" --force
+          git push -u origin "$BRANCH" --force-with-lease
           gh pr create --base main --head "$BRANCH" \
             --title "chore: sync generated OpenAPI types and tool docs" \
             --body "Automated refresh from the live OpenAPI spec. Build and tests passed in the sync job." \

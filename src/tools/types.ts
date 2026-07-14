@@ -34,9 +34,7 @@ export interface ToolDefinition<S extends z.ZodTypeAny = z.ZodTypeAny> {
 // schema↔handler check happens on the argument at the call site, while the
 // widened return lets every tool live in a single `ToolDefinition[]` (the type
 // is invariant in `S`, so the narrow form would not be assignable).
-export function defineTool<S extends z.ZodTypeAny>(
-  tool: ToolDefinition<S>,
-): ToolDefinition {
+export function defineTool<S extends z.ZodTypeAny>(tool: ToolDefinition<S>): ToolDefinition {
   // Safe erasure: at runtime the object is identical; `ToolDefinition` is
   // invariant in `S` (handler param is contravariant), so a direct cast is
   // rejected and we go through `unknown`.

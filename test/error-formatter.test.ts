@@ -6,7 +6,11 @@ import { formatApiError, formatError, extractApiMessage } from "../src/error-for
 
 describe("extractApiMessage", () => {
   it("returns the message field from a NestJS-style error body", () => {
-    const body = JSON.stringify({ statusCode: 403, message: "Active subscription required.", error: "Forbidden" });
+    const body = JSON.stringify({
+      statusCode: 403,
+      message: "Active subscription required.",
+      error: "Forbidden",
+    });
     assert.equal(extractApiMessage(body), "Active subscription required.");
   });
 
@@ -24,7 +28,10 @@ describe("extractApiMessage", () => {
   // response is { success: false, error: "<message>" } with no `message` field,
   // so the domain message must come through the `error` fallback.
   it("reads the message from the IWMM { success, error } envelope", () => {
-    const body = JSON.stringify({ success: false, error: "Card with set code X and number 1 not found" });
+    const body = JSON.stringify({
+      success: false,
+      error: "Card with set code X and number 1 not found",
+    });
     assert.equal(extractApiMessage(body), "Card with set code X and number 1 not found");
   });
 
@@ -49,7 +56,11 @@ describe("formatApiError", () => {
   it("returns an upgrade prompt for 403 with the API's reason", () => {
     const err = new ApiError(
       403,
-      JSON.stringify({ statusCode: 403, message: "Active subscription required.", error: "Forbidden" }),
+      JSON.stringify({
+        statusCode: 403,
+        message: "Active subscription required.",
+        error: "Forbidden",
+      }),
     );
     const out = formatApiError(err);
     assert.match(out, /Active subscription required\./);

@@ -9,13 +9,18 @@ const transactionCreate = z.object({
   pricePerUnit: z.number().min(0).describe("Per-unit price in USD."),
   isFoil: z.boolean(),
   date: z.string().describe("ISO 8601 date (YYYY-MM-DD)."),
-  source: z.string().optional().describe("Where the transaction happened (e.g. 'TCGPlayer', 'LGS')."),
+  source: z
+    .string()
+    .optional()
+    .describe("Where the transaction happened (e.g. 'TCGPlayer', 'LGS')."),
   fees: z.number().min(0).optional(),
   notes: z.string().optional(),
   skipInventorySync: z
     .boolean()
     .optional()
-    .describe("If true, record the transaction without adjusting inventory. Default false - transactions normally update inventory."),
+    .describe(
+      "If true, record the transaction without adjusting inventory. Default false - transactions normally update inventory.",
+    ),
 });
 
 const transactionUpdate = z.object({
@@ -114,7 +119,12 @@ export const getCostBasisTool = defineTool({
     .refine((v) => !!v.cardId || (!!v.setCode && !!v.setNumber), {
       message: "Provide either cardId, or both setCode and setNumber.",
     }),
-  handler: async (input: { cardId?: string; setCode?: string; setNumber?: string; isFoil: boolean }) => {
+  handler: async (input: {
+    cardId?: string;
+    setCode?: string;
+    setNumber?: string;
+    isFoil: boolean;
+  }) => {
     const query = { isFoil: input.isFoil } as never;
     if (input.cardId) {
       const { data, error } = await apiClient.GET("/api/v1/transactions/cost-basis/{cardId}", {

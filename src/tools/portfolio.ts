@@ -21,10 +21,15 @@ export const getPortfolioHistoryTool = defineTool({
   name: "get_portfolio_history",
   requiresAuth: true,
   readOnly: true,
-  description:
-    "Get portfolio value history. Premium-gated - free tier receives 403.",
+  description: "Get portfolio value history. Premium-gated - free tier receives 403.",
   inputSchema: z.object({
-    days: z.number().int().min(1).max(3650).optional().describe("How many days of history. Server default applies if omitted."),
+    days: z
+      .number()
+      .int()
+      .min(1)
+      .max(3650)
+      .optional()
+      .describe("How many days of history. Server default applies if omitted."),
   }),
   handler: async ({ days }: { days?: number }) => {
     const { data, error } = await apiClient.GET("/api/v1/portfolio/history", {
@@ -93,7 +98,9 @@ export const getPortfolioBreakdownTool = defineTool({
   inputSchema: z.object({
     by: z
       .enum(["set", "rarity", "type", "color", "cost-basis"])
-      .describe("Dimension to break down by. 'cost-basis' buckets are gain/loss/at-cost; 'color' groups by color identity."),
+      .describe(
+        "Dimension to break down by. 'cost-basis' buckets are gain/loss/at-cost; 'color' groups by color identity.",
+      ),
     colors: z
       .string()
       .optional()
@@ -123,7 +130,9 @@ export const getPortfolioBreakdownCardsTool = defineTool({
       .describe("Dimension the slice belongs to. Must match the get_portfolio_breakdown call."),
     key: z
       .string()
-      .describe("Slice key from the breakdown: a set code, rarity, type, cost-basis bucket, or color code."),
+      .describe(
+        "Slice key from the breakdown: a set code, rarity, type, cost-basis bucket, or color code.",
+      ),
     colors: z
       .string()
       .optional()
