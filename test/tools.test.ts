@@ -9,6 +9,78 @@ type FetchCall = { url: string; init: RequestInit };
 const CARD_ID = "00000000-0000-0000-0000-0000000000aa";
 const CARD_ID_2 = "00000000-0000-0000-0000-0000000000bb";
 
+// Minimal valid input per tool, for the T2 auth invariant loop below. One
+// entry per registered tool (asserted).
+const UUID = "00000000-0000-0000-0000-000000000001";
+const SAMPLE_INPUTS: Record<string, unknown> = {
+  search_cards: {},
+  get_card: { setCode: "lea", setNumber: "161" },
+  get_card_prices: { setCode: "lea", setNumber: "161" },
+  get_card_price_history: { setCode: "lea", setNumber: "161" },
+  search_sets: {},
+  get_set: { code: "mh3" },
+  list_set_cards: { code: "mh3" },
+  get_sealed_products: { code: "mh3" },
+  get_sealed_product: { uuid: UUID },
+  get_set_price_history: { code: "mh3" },
+  get_card_buylist: { setCode: "lea", setNumber: "161" },
+  get_market_sell_value: {},
+  get_cash_vs_credit: {},
+  list_buy_list: {},
+  add_buy_list: { cardId: UUID },
+  update_buy_list: { cardId: UUID, quantity: 1 },
+  remove_buy_list: { cardId: UUID },
+  import_buy_list: { text: "name\nLightning Bolt" },
+  list_inventory: {},
+  get_inventory_quantities: { cardIds: [UUID] },
+  add_inventory: { items: [{ cardId: UUID, quantity: 1, isFoil: false }] },
+  update_inventory: { items: [{ cardId: UUID, quantity: 1, isFoil: false }] },
+  remove_inventory: { cardId: UUID, isFoil: false },
+  import_inventory_cards: { text: "name\nLightning Bolt" },
+  export_inventory: {},
+  list_sealed_inventory: {},
+  set_sealed_inventory: { sealedProductUuid: UUID, quantity: 1 },
+  remove_sealed_inventory: { sealedProductUuid: UUID },
+  list_transactions: {},
+  record_transaction: {
+    cardId: "abc",
+    type: "BUY",
+    quantity: 1,
+    pricePerUnit: 5,
+    isFoil: false,
+    date: "2026-05-13",
+  },
+  update_transaction: { id: 1, patch: { quantity: 1 } },
+  delete_transaction: { id: 1 },
+  get_cost_basis: { cardId: "abc" },
+  get_portfolio_summary: {},
+  get_portfolio_history: {},
+  get_card_performance: {},
+  get_cash_flow: {},
+  get_realized_gains: {},
+  get_portfolio_breakdown: { by: "set" },
+  get_portfolio_breakdown_cards: { by: "rarity", key: "mythic" },
+  refresh_portfolio: {},
+  list_decks: {},
+  get_deck: { deckId: 1 },
+  create_deck: { name: "x" },
+  import_deck: { name: "x", text: "4 Lightning Bolt" },
+  update_deck: { deckId: 1, name: "x" },
+  delete_deck: { deckId: 1 },
+  add_deck_card: { deckId: 1, cardId: UUID },
+  set_deck_card_quantity: { deckId: 1, cardId: UUID, isSideboard: false, quantity: 1 },
+  remove_deck_card: { deckId: 1, cardId: UUID, isSideboard: false },
+  deck_missing_to_buy_list: { deckId: 1 },
+  list_price_alerts: {},
+  create_price_alert: { cardId: UUID, increasePct: 10 },
+  update_price_alert: { id: 1, isActive: false },
+  delete_price_alert: { id: 1 },
+  list_notifications: {},
+  get_unread_notification_count: {},
+  mark_notification_read: { id: 1 },
+  mark_all_notifications_read: {},
+};
+
 let calls: FetchCall[];
 const originalFetch = globalThis.fetch;
 
@@ -74,32 +146,61 @@ describe("tool registry", () => {
     }
   });
 
-  // The auto-generated docs/TOOLS.md buckets tools by whether the description
-  // ends with "Requires IWMM_API_KEY". Keep that signal trustworthy: a tool
-  // declares the requirement iff it is not in this read-only set. A new
-  // authenticated tool that forgets the phrase (or puts it mid-description, or
-  // a new read-only tool) trips this test.
-  it("authenticated tools declare the API-key requirement in their description", () => {
-    const readOnly = new Set([
-      "search_cards",
-      "get_card",
-      "get_card_prices",
-      "get_card_price_history",
-      "search_sets",
-      "get_set",
-      "list_set_cards",
-      "get_sealed_products",
-      "get_sealed_product",
-      "get_set_price_history",
-      "get_card_buylist",
-    ]);
+  // `requiresAuth` is the single source of truth for auth-ness (drives the docs
+  // bucketing, the server's description suffix, and the T2 header invariant
+  // below). Pin it against the known set of public, no-key endpoints so a
+  // mis-set flag on a new tool is caught here.
+  const NO_AUTH = new Set([
+    "search_cards",
+    "get_card",
+    "get_card_prices",
+    "get_card_price_history",
+    "search_sets",
+    "get_set",
+    "list_set_cards",
+    "get_sealed_products",
+    "get_sealed_product",
+    "get_set_price_history",
+    "get_card_buylist",
+  ]);
+
+  it("requiresAuth matches the known public (no-key) tool set", () => {
     for (const t of tools) {
-      const declares = /Requires IWMM_API_KEY\.?\s*$/i.test(t.description);
       assert.equal(
-        declares,
-        !readOnly.has(t.name),
-        `${t.name}: description ${declares ? "declares" : "omits"} the API-key requirement, ` +
-          `but it is ${readOnly.has(t.name) ? "read-only" : "authenticated"}`,
+        t.requiresAuth,
+        !NO_AUTH.has(t.name),
+        `${t.name}: requiresAuth=${t.requiresAuth} but it is ${
+          NO_AUTH.has(t.name) ? "public" : "authenticated"
+        }`,
+      );
+    }
+  });
+
+  it("description prose never hard-codes the API-key requirement (derived from requiresAuth)", () => {
+    for (const t of tools) {
+      assert.doesNotMatch(
+        t.description,
+        /Requires IWMM_API_KEY/i,
+        `${t.name}: description should not hard-code the auth suffix; set requiresAuth instead`,
+      );
+    }
+  });
+
+  // T2 (the invariant that used to fail silently): every tool sends an
+  // Authorization header iff it declares requiresAuth - i.e. no authenticated
+  // handler forgets `headers: AUTH_HEADERS`, and no public one leaks a key.
+  it("every tool sends Authorization iff requiresAuth", async () => {
+    for (const t of tools) {
+      const input = SAMPLE_INPUTS[t.name];
+      assert.ok(input !== undefined, `${t.name}: add a SAMPLE_INPUTS entry`);
+      calls.length = 0;
+      await t.handler(t.inputSchema.parse(input));
+      assert.equal(calls.length, 1, `${t.name}: expected exactly one HTTP call`);
+      const sentAuth = new Headers(calls[0].init.headers).has("Authorization");
+      assert.equal(
+        sentAuth,
+        t.requiresAuth,
+        `${t.name}: sent Authorization=${sentAuth} but requiresAuth=${t.requiresAuth}`,
       );
     }
   });

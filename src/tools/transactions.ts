@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { apiClient, AUTH_HEADERS, unwrap } from "../api-client.js";
+import { defineTool } from "./types.js";
 
 const transactionCreate = z.object({
   cardId: z.string().describe("Internal IWMM card UUID."),
@@ -26,10 +27,12 @@ const transactionUpdate = z.object({
   notes: z.string().optional(),
 });
 
-export const listTransactionsTool = {
+export const listTransactionsTool = defineTool({
   name: "list_transactions",
+  requiresAuth: true,
+  readOnly: true,
   description:
-    "List the authenticated user's transactions, paginated. Supports sort/filter query params. Free tier sees the last 30 days only; Premium gets full history. Requires IWMM_API_KEY.",
+    "List the authenticated user's transactions, paginated. Supports sort/filter query params. Free tier sees the last 30 days only; Premium gets full history.",
   inputSchema: z.object({
     page: z.number().int().min(1).optional(),
     limit: z.number().int().min(1).max(100).optional(),
@@ -44,12 +47,13 @@ export const listTransactionsTool = {
     });
     return unwrap(data, error);
   },
-};
+});
 
-export const recordTransactionTool = {
+export const recordTransactionTool = defineTool({
   name: "record_transaction",
+  requiresAuth: true,
   description:
-    "Record a buy or sell transaction. By default this also adjusts inventory (BUY adds, SELL subtracts). This is a real write. Requires IWMM_API_KEY.",
+    "Record a buy or sell transaction. By default this also adjusts inventory (BUY adds, SELL subtracts). This is a real write.",
   inputSchema: transactionCreate,
   handler: async (input: z.infer<typeof transactionCreate>) => {
     const { data, error } = await apiClient.POST("/api/v1/transactions", {
@@ -58,12 +62,13 @@ export const recordTransactionTool = {
     });
     return unwrap(data, error);
   },
-};
+});
 
-export const updateTransactionTool = {
+export const updateTransactionTool = defineTool({
   name: "update_transaction",
+  requiresAuth: true,
   description:
-    "Update an existing transaction by ID. Only the fields supplied are changed. Card identity and type (BUY/SELL) cannot be changed via this endpoint - delete and re-create instead. Requires IWMM_API_KEY.",
+    "Update an existing transaction by ID. Only the fields supplied are changed. Card identity and type (BUY/SELL) cannot be changed via this endpoint - delete and re-create instead.",
   inputSchema: z.object({
     id: z.number().int().min(1).describe("Transaction ID from list_transactions."),
     patch: transactionUpdate,
@@ -76,11 +81,13 @@ export const updateTransactionTool = {
     });
     return unwrap(data, error);
   },
-};
+});
 
-export const deleteTransactionTool = {
+export const deleteTransactionTool = defineTool({
   name: "delete_transaction",
-  description: "Delete a transaction by ID. Requires IWMM_API_KEY.",
+  requiresAuth: true,
+  destructive: true,
+  description: "Delete a transaction by ID.",
   inputSchema: z.object({ id: z.number().int().min(1) }),
   handler: async ({ id }: { id: number }) => {
     const { data, error } = await apiClient.DELETE("/api/v1/transactions/{id}", {
@@ -89,12 +96,14 @@ export const deleteTransactionTool = {
     });
     return unwrap(data, error);
   },
-};
+});
 
-export const getCostBasisTool = {
+export const getCostBasisTool = defineTool({
   name: "get_cost_basis",
+  requiresAuth: true,
+  readOnly: true,
   description:
-    "Get FIFO cost basis for a specific card+finish for the authenticated user. Pass either cardId or (setCode, setNumber). Requires IWMM_API_KEY.",
+    "Get FIFO cost basis for a specific card+finish for the authenticated user. Pass either cardId or (setCode, setNumber).",
   inputSchema: z
     .object({
       cardId: z.string().optional(),
@@ -123,4 +132,4 @@ export const getCostBasisTool = {
     );
     return unwrap(data, error);
   },
-};
+});

@@ -1,4 +1,4 @@
-import type { z } from "zod";
+import type { ToolDefinition } from "./types.js";
 import { searchCardsTool } from "./search-cards.js";
 import { getCardTool, getCardPricesTool, getCardPriceHistoryTool } from "./get-card.js";
 import {
@@ -77,12 +77,7 @@ import {
   importBuyListTool,
 } from "./buy-list.js";
 
-export interface ToolDefinition {
-  name: string;
-  description: string;
-  inputSchema: z.ZodTypeAny;
-  handler: (input: any) => Promise<unknown>;
-}
+export type { ToolDefinition };
 
 export const tools: ToolDefinition[] = [
   // Read-only (no auth)

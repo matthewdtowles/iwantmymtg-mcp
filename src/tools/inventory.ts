@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { apiClient, AUTH_HEADERS, unwrap } from "../api-client.js";
+import { defineTool } from "./types.js";
 
 const inventoryItem = z.object({
   cardId: z.string().uuid().describe("Internal IWMM card UUID. Get from search_cards or get_card."),
@@ -7,10 +8,12 @@ const inventoryItem = z.object({
   isFoil: z.boolean().describe("Whether this is the foil variant. Foil and non-foil are tracked as separate rows."),
 });
 
-export const listInventoryTool = {
+export const listInventoryTool = defineTool({
   name: "list_inventory",
+  requiresAuth: true,
+  readOnly: true,
   description:
-    "List the authenticated user's card inventory, paginated. Returns cards with quantities, prices, and metadata. Requires IWMM_API_KEY.",
+    "List the authenticated user's card inventory, paginated. Returns cards with quantities, prices, and metadata.",
   inputSchema: z.object({
     page: z.number().int().min(1).optional(),
     limit: z.number().int().min(1).max(100).optional(),
@@ -22,12 +25,13 @@ export const listInventoryTool = {
     });
     return unwrap(data, error);
   },
-};
+});
 
-export const addInventoryTool = {
+export const addInventoryTool = defineTool({
   name: "add_inventory",
+  requiresAuth: true,
   description:
-    "Add one or more cards to the authenticated user's inventory. Accepts a batch - pass a single-item array for one card. This is a real write. Use update_inventory to change quantities, remove_inventory to delete a row. Requires IWMM_API_KEY.",
+    "Add one or more cards to the authenticated user's inventory. Accepts a batch - pass a single-item array for one card. This is a real write. Use update_inventory to change quantities, remove_inventory to delete a row.",
   inputSchema: z.object({ items: z.array(inventoryItem).min(1) }),
   handler: async (input: { items: z.infer<typeof inventoryItem>[] }) => {
     const { data, error } = await apiClient.POST("/api/v1/inventory", {
@@ -36,12 +40,13 @@ export const addInventoryTool = {
     });
     return unwrap(data, error);
   },
-};
+});
 
-export const updateInventoryTool = {
+export const updateInventoryTool = defineTool({
   name: "update_inventory",
+  requiresAuth: true,
   description:
-    "Update quantities for one or more existing inventory rows. Accepts a batch. Use remove_inventory to delete a row entirely. Requires IWMM_API_KEY.",
+    "Update quantities for one or more existing inventory rows. Accepts a batch. Use remove_inventory to delete a row entirely.",
   inputSchema: z.object({ items: z.array(inventoryItem).min(1) }),
   handler: async (input: { items: z.infer<typeof inventoryItem>[] }) => {
     const { data, error } = await apiClient.PATCH("/api/v1/inventory", {
@@ -50,11 +55,13 @@ export const updateInventoryTool = {
     });
     return unwrap(data, error);
   },
-};
+});
 
-export const removeInventoryTool = {
+export const removeInventoryTool = defineTool({
   name: "remove_inventory",
-  description: "Remove a card+finish row from the authenticated user's inventory. Requires IWMM_API_KEY.",
+  requiresAuth: true,
+  destructive: true,
+  description: "Remove a card+finish row from the authenticated user's inventory.",
   inputSchema: z.object({
     cardId: z.string().uuid(),
     isFoil: z.boolean(),
@@ -66,12 +73,14 @@ export const removeInventoryTool = {
     });
     return unwrap(data, error);
   },
-};
+});
 
-export const getInventoryQuantitiesTool = {
+export const getInventoryQuantitiesTool = defineTool({
   name: "get_inventory_quantities",
+  requiresAuth: true,
+  readOnly: true,
   description:
-    "Batch lookup: given a list of card UUIDs, return how many of each (normal + foil) the user owns. Useful before recommending adds. Requires IWMM_API_KEY.",
+    "Batch lookup: given a list of card UUIDs, return how many of each (normal + foil) the user owns. Useful before recommending adds.",
   inputSchema: z.object({
     cardIds: z.array(z.string().uuid()).min(1).max(200),
   }),
@@ -82,12 +91,13 @@ export const getInventoryQuantitiesTool = {
     });
     return unwrap(data, error);
   },
-};
+});
 
-export const importInventoryCardsTool = {
+export const importInventoryCardsTool = defineTool({
   name: "import_inventory_cards",
+  requiresAuth: true,
   description:
-    "Bulk-import cards into the authenticated user's inventory from pasted CSV text. Native header: name,set_code,number[,quantity][,foil]; Moxfield, Archidekt, Deckbox, and TCGPlayer exports are auto-detected. Returns counts of saved/deleted/skipped rows and per-row errors. Requires IWMM_API_KEY.",
+    "Bulk-import cards into the authenticated user's inventory from pasted CSV text. Native header: name,set_code,number[,quantity][,foil]; Moxfield, Archidekt, Deckbox, and TCGPlayer exports are auto-detected. Returns counts of saved/deleted/skipped rows and per-row errors.",
   inputSchema: z.object({
     text: z.string().min(1).describe("CSV text including a header row."),
   }),
@@ -101,12 +111,14 @@ export const importInventoryCardsTool = {
     });
     return unwrap(data, error);
   },
-};
+});
 
-export const exportInventoryTool = {
+export const exportInventoryTool = defineTool({
   name: "export_inventory",
+  requiresAuth: true,
+  readOnly: true,
   description:
-    "Export the authenticated user's full card inventory as CSV (columns: id, name, set_code, number, quantity, foil). Reimport-compatible with import_inventory_cards. Requires IWMM_API_KEY.",
+    "Export the authenticated user's full card inventory as CSV (columns: id, name, set_code, number, quantity, foil). Reimport-compatible with import_inventory_cards.",
   inputSchema: z.object({}),
   handler: async () => {
     const { data, error } = await apiClient.GET("/api/v1/inventory/export", {
@@ -115,4 +127,4 @@ export const exportInventoryTool = {
     });
     return unwrap(data, error);
   },
-};
+});

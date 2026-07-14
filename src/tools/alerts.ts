@@ -1,13 +1,16 @@
 import { z } from "zod";
 import { apiClient, AUTH_HEADERS, unwrap } from "../api-client.js";
+import { defineTool } from "./types.js";
 
 const thresholdRefinement = (v: { increasePct?: number | null; decreasePct?: number | null }) =>
   v.increasePct != null || v.decreasePct != null;
 
-export const listAlertsTool = {
+export const listAlertsTool = defineTool({
   name: "list_price_alerts",
+  requiresAuth: true,
+  readOnly: true,
   description:
-    "List the authenticated user's price alerts. Free tier is capped at 5 active alerts and a single threshold direction per alert; Premium removes both limits. Requires IWMM_API_KEY.",
+    "List the authenticated user's price alerts. Free tier is capped at 5 active alerts and a single threshold direction per alert; Premium removes both limits.",
   inputSchema: z.object({}),
   handler: async () => {
     const { data, error } = await apiClient.GET("/api/v1/price-alerts", {
@@ -15,12 +18,13 @@ export const listAlertsTool = {
     });
     return unwrap(data, error);
   },
-};
+});
 
-export const createAlertTool = {
+export const createAlertTool = defineTool({
   name: "create_price_alert",
+  requiresAuth: true,
   description:
-    "Create a price alert for a card. Supply increasePct, decreasePct, or both (Premium). At least one threshold is required. Requires IWMM_API_KEY.",
+    "Create a price alert for a card. Supply increasePct, decreasePct, or both (Premium). At least one threshold is required.",
   inputSchema: z
     .object({
       cardId: z.string().uuid().describe("Internal IWMM card UUID."),
@@ -35,12 +39,13 @@ export const createAlertTool = {
     });
     return unwrap(data, error);
   },
-};
+});
 
-export const updateAlertTool = {
+export const updateAlertTool = defineTool({
   name: "update_price_alert",
+  requiresAuth: true,
   description:
-    "Update an existing price alert. Pass null for a threshold to clear it (Premium only - free users must keep exactly one direction). isActive toggles enable/disable without deleting. Requires IWMM_API_KEY.",
+    "Update an existing price alert. Pass null for a threshold to clear it (Premium only - free users must keep exactly one direction). isActive toggles enable/disable without deleting.",
   inputSchema: z
     .object({
       id: z.coerce.number().int().describe("Alert ID from list_price_alerts."),
@@ -60,11 +65,13 @@ export const updateAlertTool = {
     });
     return unwrap(data, error);
   },
-};
+});
 
-export const deleteAlertTool = {
+export const deleteAlertTool = defineTool({
   name: "delete_price_alert",
-  description: "Delete a price alert by ID. Requires IWMM_API_KEY.",
+  requiresAuth: true,
+  destructive: true,
+  description: "Delete a price alert by ID.",
   inputSchema: z.object({ id: z.coerce.number().int() }),
   handler: async ({ id }: { id: number }) => {
     const { data, error } = await apiClient.DELETE("/api/v1/price-alerts/{id}", {
@@ -73,4 +80,4 @@ export const deleteAlertTool = {
     });
     return unwrap(data, error);
   },
-};
+});

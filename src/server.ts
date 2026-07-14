@@ -25,11 +25,22 @@ export async function startServer() {
   server.setRequestHandler(ListToolsRequestSchema, async () => ({
     tools: tools.map((t) => ({
       name: t.name,
-      description: t.description,
+      // The API-key requirement is derived from `requiresAuth`, not hand-typed
+      // into each description, so the three consumers (docs, this suffix, the
+      // test) can't drift.
+      description: t.requiresAuth
+        ? `${t.description} Requires IWMM_API_KEY.`
+        : t.description,
       // Default (jsonSchema7) target: MCP inputSchema is JSON Schema, and the
       // openApi3 target's `nullable: true` breaks clients that validate
       // strictly (nullable fields like update_price_alert's thresholds).
       inputSchema: zodToJsonSchema(t.inputSchema) as Record<string, unknown>,
+      // Structured hints so clients can gate destructive calls (e.g.
+      // delete_deck) rather than parsing the description prose.
+      annotations: {
+        ...(t.readOnly ? { readOnlyHint: true } : {}),
+        ...(t.destructive ? { destructiveHint: true } : {}),
+      },
     })),
   }));
 
