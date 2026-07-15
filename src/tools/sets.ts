@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { apiClient, unwrap } from "../api-client.js";
+import { formatEnum, limitParam, pageParam } from "./schemas.js";
 import { defineTool } from "./types.js";
 
 export const searchSetsTool = defineTool({
@@ -9,8 +10,8 @@ export const searchSetsTool = defineTool({
   description:
     "List Magic: The Gathering sets, optionally paginated. Returns set code, name, release date, type, and aggregate prices.",
   inputSchema: z.object({
-    page: z.number().int().min(1).optional(),
-    limit: z.number().int().min(1).max(100).optional(),
+    page: pageParam.optional(),
+    limit: limitParam.optional(),
   }),
   handler: async (input: Record<string, unknown>) => {
     const { data, error } = await apiClient.GET("/api/v1/sets", {
@@ -44,10 +45,10 @@ export const listSetCardsTool = defineTool({
     code: z.string().describe("Set code."),
     rarity: z.enum(["common", "uncommon", "rare", "mythic"]).optional(),
     type: z.string().optional(),
-    format: z.string().optional(),
+    format: formatEnum.optional(),
     legality: z.enum(["legal", "banned", "restricted"]).optional(),
-    page: z.number().int().min(1).optional(),
-    limit: z.number().int().min(1).max(100).optional(),
+    page: pageParam.optional(),
+    limit: limitParam.optional(),
   }),
   handler: async ({ code, ...rest }: { code: string } & Record<string, unknown>) => {
     const { data, error } = await apiClient.GET("/api/v1/sets/{code}/cards", {

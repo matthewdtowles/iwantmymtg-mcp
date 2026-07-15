@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { AUTH_HEADERS, apiClient, unwrap } from "../api-client.js";
+import { cardIdSchema, formatEnum, idParam } from "./schemas.js";
 import { defineTool } from "./types.js";
 
 /**
@@ -9,28 +10,11 @@ import { defineTool } from "./types.js";
  * require IWMM_API_KEY.
  */
 
-const FORMATS = [
-  "standard",
-  "commander",
-  "modern",
-  "legacy",
-  "vintage",
-  "brawl",
-  "explorer",
-  "historic",
-  "oathbreaker",
-  "pauper",
-  "pioneer",
-] as const;
+const format = formatEnum.optional().describe("Target format. Omit for no format.");
 
-const format = z.enum(FORMATS).optional().describe("Target format. Omit for no format.");
+const deckId = idParam.describe("Deck id. Get from list_decks or create_deck.");
 
-const deckId = z.number().int().min(1).describe("Deck id. Get from list_decks or create_deck.");
-
-const cardId = z
-  .string()
-  .uuid()
-  .describe("Internal IWMM card UUID. Get from search_cards or get_card.");
+const cardId = cardIdSchema.describe("Internal IWMM card UUID. Get from search_cards or get_card.");
 
 const isSideboard = z
   .boolean()

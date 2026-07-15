@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { AUTH_HEADERS, apiClient, unwrap } from "../api-client.js";
+import { idParam } from "./schemas.js";
 import { defineTool } from "./types.js";
 
 export const listNotificationsTool = defineTool({
@@ -35,7 +36,7 @@ export const markNotificationReadTool = defineTool({
   name: "mark_notification_read",
   requiresAuth: true,
   description: "Mark a single notification as read.",
-  inputSchema: z.object({ id: z.coerce.number().int() }),
+  inputSchema: z.object({ id: idParam }),
   handler: async ({ id }: { id: number }) => {
     const { data, error } = await apiClient.PATCH("/api/v1/notifications/{id}/read", {
       params: { path: { id } },

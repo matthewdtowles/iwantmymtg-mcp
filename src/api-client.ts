@@ -57,10 +57,21 @@ function buildClient(): ApiClient {
   return client;
 }
 
+// Memoized so we don't rebuild the client (and re-register middleware) on every
+// property access (A3). `fetch` is indirected through `globalThis.fetch` at call
+// time, so test stubbing still works; we rebuild only if `config.baseUrl`
+// changes, which keeps the "config picked up at call time" contract.
+let cached: { client: ApiClient; baseUrl: string } | undefined;
+function getClient(): ApiClient {
+  if (!cached || cached.baseUrl !== config.baseUrl) {
+    cached = { client: buildClient(), baseUrl: config.baseUrl };
+  }
+  return cached.client;
+}
+
 export const apiClient: ApiClient = new Proxy({} as ApiClient, {
   get(_, prop) {
-    const client = buildClient();
-    return Reflect.get(client, prop);
+    return Reflect.get(getClient(), prop);
   },
 });
 

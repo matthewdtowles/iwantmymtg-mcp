@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { apiClient, unwrap } from "../api-client.js";
+import { formatEnum, limitParam, pageParam } from "./schemas.js";
 import { defineTool } from "./types.js";
 
 export const searchCardsInputSchema = {
@@ -15,16 +16,15 @@ export const searchCardsInputSchema = {
     .string()
     .optional()
     .describe("Substring match against card type line (e.g. 'Goblin', 'Instant')."),
-  format: z
-    .string()
+  format: formatEnum
     .optional()
     .describe("Filter to cards with a legality entry in this format (e.g. 'modern', 'commander')."),
   legality: z
     .enum(["legal", "banned", "restricted"])
     .optional()
     .describe("Used with 'format'. Defaults to 'legal' when format is set."),
-  page: z.number().int().min(1).optional().describe("1-based page index."),
-  limit: z.number().int().min(1).max(100).optional().describe("Page size (max 100)."),
+  page: pageParam.optional().describe("1-based page index."),
+  limit: limitParam.optional().describe("Page size (max 100)."),
 };
 
 export async function searchCards(input: Record<string, unknown>) {
@@ -42,6 +42,11 @@ export const searchCardsTool = defineTool({
   readOnly: true,
   description:
     "Search Magic: The Gathering cards by name (substring), set code, rarity, type, or format legality. Returns a paginated list with prices and basic metadata. Use this for catalog lookups; for a specific printing prefer get_card with set+number.",
-  inputSchema: z.object(searchCardsInputSchema),
+  inputSchema: z
+    .object(searchCardsInputSchema)
+    .refine((v) => v.format !== undefined || v.legality === undefined, {
+      message: "legality can only be used together with format",
+      path: ["legality"],
+    }),
   handler: searchCards,
 });
