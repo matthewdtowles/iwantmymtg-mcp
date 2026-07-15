@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { AUTH_HEADERS, apiClient, toQuery, unwrap } from "../api-client.js";
+import { AUTH_HEADERS, apiClient, unwrap } from "../api-client.js";
 import { defineTool } from "./types.js";
 
 /** The colors filter only applies to the by=color breakdown; drop it otherwise (I9). */
@@ -37,7 +37,7 @@ export const getPortfolioHistoryTool = defineTool({
   }),
   handler: async ({ days }: { days?: number }) => {
     const { data, error } = await apiClient.GET("/api/v1/portfolio/history", {
-      params: { query: toQuery({ days }) },
+      params: { query: { days } },
       headers: AUTH_HEADERS,
     });
     return unwrap(data, error);
@@ -56,7 +56,7 @@ export const getCardPerformanceTool = defineTool({
   }),
   handler: async (input: { type?: "best" | "worst"; limit?: number }) => {
     const { data, error } = await apiClient.GET("/api/v1/portfolio/performance", {
-      params: { query: toQuery(input) },
+      params: { query: input },
       headers: AUTH_HEADERS,
     });
     return unwrap(data, error);

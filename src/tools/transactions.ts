@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { AUTH_HEADERS, apiClient, toQuery, unwrap } from "../api-client.js";
+import { AUTH_HEADERS, apiClient, unwrap } from "../api-client.js";
 import { defineTool } from "./types.js";
 
 const transactionCreate = z.object({
@@ -124,7 +124,7 @@ export const getCostBasisTool = defineTool({
     setNumber?: string;
     isFoil: boolean;
   }) => {
-    const query = toQuery({ isFoil: input.isFoil });
+    const query = { isFoil: input.isFoil };
     if (input.cardId) {
       const { data, error } = await apiClient.GET("/api/v1/transactions/cost-basis/{cardId}", {
         params: { path: { cardId: input.cardId }, query },

@@ -79,22 +79,6 @@ export const apiClient: ApiClient = new Proxy({} as ApiClient, {
 export const AUTH_HEADERS = { "X-IWMM-Auth": "required" } as const;
 
 /**
- * Serialize query params as strings and drop `undefined` keys. The OpenAPI spec
- * types query values as strings, so this is the single place we coerce (I6);
- * numbers/booleans stringify exactly as openapi-fetch would serialize them, so
- * it is behavior-preserving and lets call sites drop their `as never` casts.
- */
-export function toQuery(
-  params: Record<string, string | number | boolean | undefined>,
-): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (const [key, value] of Object.entries(params)) {
-    if (value !== undefined) out[key] = String(value);
-  }
-  return out;
-}
-
-/**
  * Unwrap an openapi-fetch `{ data, error }` result. HTTP failures are already
  * thrown as `ApiError` by the response middleware, so `error` here only carries
  * non-HTTP failures (e.g. network errors).

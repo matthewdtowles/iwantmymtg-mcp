@@ -84,7 +84,7 @@ export const getSetPriceHistoryTool = defineTool({
     days: z.number().int().min(1).optional().describe("Number of days of history to return."),
   }),
   handler: async ({ code, days }: { code: string; days?: number }) => {
-    const query = days != null ? { days: String(days) } : undefined;
+    const query = days != null ? { days } : undefined;
     const { data, error } = await apiClient.GET("/api/v1/sets/{code}/price-history", {
       params: { path: { code }, query },
     });

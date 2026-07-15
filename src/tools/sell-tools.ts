@@ -56,7 +56,7 @@ export const getCashVsCreditTool = defineTool({
       ),
   }),
   handler: async (input: { bonus?: number }) => {
-    const query = input.bonus != null ? { bonus: String(input.bonus) } : undefined;
+    const query = input.bonus != null ? { bonus: input.bonus } : undefined;
     const { data, error } = await apiClient.GET("/api/v1/optimizer", {
       params: { query },
       headers: AUTH_HEADERS,
