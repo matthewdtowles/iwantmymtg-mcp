@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { AUTH_HEADERS, apiClient, unwrap } from "../api-client.js";
+import { cardKey } from "./schemas.js";
 import { defineTool } from "./types.js";
 
 /**
@@ -14,13 +15,8 @@ export const getCardBuylistTool = defineTool({
   readOnly: true,
   description:
     "Get current buylist (sell-to-vendor) offers for a card printing, by set code and collector number. Returns offers grouped by finish (normal/foil/etched), best first, with the highest offer per finish marked. NM condition only. Use get_card_prices for retail (buy) prices instead.",
-  inputSchema: z.object({
-    setCode: z.string().describe("Set code (e.g. 'lea')."),
-    setNumber: z
-      .string()
-      .describe("Collector number within the set (e.g. '161'). String, not int."),
-  }),
-  handler: async (input: { setCode: string; setNumber: string }) => {
+  inputSchema: cardKey,
+  handler: async (input: z.infer<typeof cardKey>) => {
     const { data, error } = await apiClient.GET("/api/v1/cards/{setCode}/{setNumber}/buylist", {
       params: { path: input },
     });

@@ -27,7 +27,7 @@ export const listInventoryTool = defineTool({
   }),
   handler: async (input: Record<string, unknown>) => {
     const { data, error } = await apiClient.GET("/api/v1/inventory", {
-      params: { query: input as never },
+      params: { query: input },
       headers: AUTH_HEADERS,
     });
     return unwrap(data, error);
@@ -42,7 +42,7 @@ export const addInventoryTool = defineTool({
   inputSchema: z.object({ items: z.array(inventoryItem).min(1) }),
   handler: async (input: { items: z.infer<typeof inventoryItem>[] }) => {
     const { data, error } = await apiClient.POST("/api/v1/inventory", {
-      body: input.items as never,
+      body: input.items,
       headers: AUTH_HEADERS,
     });
     return unwrap(data, error);
@@ -57,7 +57,7 @@ export const updateInventoryTool = defineTool({
   inputSchema: z.object({ items: z.array(inventoryItem).min(1) }),
   handler: async (input: { items: z.infer<typeof inventoryItem>[] }) => {
     const { data, error } = await apiClient.PATCH("/api/v1/inventory", {
-      body: input.items as never,
+      body: input.items,
       headers: AUTH_HEADERS,
     });
     return unwrap(data, error);
@@ -75,7 +75,7 @@ export const removeInventoryTool = defineTool({
   }),
   handler: async (input: { cardId: string; isFoil: boolean }) => {
     const { data, error } = await apiClient.DELETE("/api/v1/inventory", {
-      body: input as never,
+      body: input,
       headers: AUTH_HEADERS,
     });
     return unwrap(data, error);
@@ -93,7 +93,7 @@ export const getInventoryQuantitiesTool = defineTool({
   }),
   handler: async ({ cardIds }: { cardIds: string[] }) => {
     const { data, error } = await apiClient.GET("/api/v1/inventory/quantities", {
-      params: { query: { cardIds: cardIds.join(",") } as never },
+      params: { query: { cardIds: cardIds.join(",") } },
       headers: AUTH_HEADERS,
     });
     return unwrap(data, error);
@@ -113,6 +113,8 @@ export const importInventoryCardsTool = defineTool({
     const form = new FormData();
     form.append("file", new Blob([input.text], { type: "text/csv" }), "inventory.csv");
     const { data, error } = await apiClient.POST("/api/v1/inventory/import/cards", {
+      // openapi-fetch types multipart bodies from the JSON schema (`{ file: string }`),
+      // so the raw FormData needs a cast - this is a client limitation, not a spec gap.
       body: form as never,
       headers: AUTH_HEADERS,
     });

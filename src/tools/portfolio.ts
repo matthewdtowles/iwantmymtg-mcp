@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { AUTH_HEADERS, apiClient, unwrap } from "../api-client.js";
+import { AUTH_HEADERS, apiClient, toQuery, unwrap } from "../api-client.js";
 import { defineTool } from "./types.js";
 
 export const getPortfolioSummaryTool = defineTool({
@@ -33,7 +33,7 @@ export const getPortfolioHistoryTool = defineTool({
   }),
   handler: async ({ days }: { days?: number }) => {
     const { data, error } = await apiClient.GET("/api/v1/portfolio/history", {
-      params: { query: { days } as never },
+      params: { query: toQuery({ days }) },
       headers: AUTH_HEADERS,
     });
     return unwrap(data, error);
@@ -52,7 +52,7 @@ export const getCardPerformanceTool = defineTool({
   }),
   handler: async (input: { type?: "best" | "worst"; limit?: number }) => {
     const { data, error } = await apiClient.GET("/api/v1/portfolio/performance", {
-      params: { query: input as never },
+      params: { query: toQuery(input) },
       headers: AUTH_HEADERS,
     });
     return unwrap(data, error);
@@ -111,7 +111,7 @@ export const getPortfolioBreakdownTool = defineTool({
   handler: async (input: { by: string; colors?: string }) => {
     const colors = input.by === "color" ? input.colors : undefined;
     const { data, error } = await apiClient.GET("/api/v1/portfolio/breakdown", {
-      params: { query: { by: input.by, colors } as never },
+      params: { query: { by: input.by, colors } },
       headers: AUTH_HEADERS,
     });
     return unwrap(data, error);
@@ -143,7 +143,7 @@ export const getPortfolioBreakdownCardsTool = defineTool({
   handler: async (input: { by: string; key: string; colors?: string }) => {
     const colors = input.by === "color" ? input.colors : undefined;
     const { data, error } = await apiClient.GET("/api/v1/portfolio/breakdown/cards", {
-      params: { query: { by: input.by, key: input.key, colors } as never },
+      params: { query: { by: input.by, key: input.key, colors } },
       headers: AUTH_HEADERS,
     });
     return unwrap(data, error);

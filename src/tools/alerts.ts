@@ -45,7 +45,7 @@ export const createAlertTool = defineTool({
     }),
   handler: async (input: { cardId: string; increasePct?: number; decreasePct?: number }) => {
     const { data, error } = await apiClient.POST("/api/v1/price-alerts", {
-      body: input as never,
+      body: input,
       headers: AUTH_HEADERS,
     });
     return unwrap(data, error);
@@ -71,7 +71,7 @@ export const updateAlertTool = defineTool({
   handler: async ({ id, ...patch }: { id: number } & Record<string, unknown>) => {
     const { data, error } = await apiClient.PATCH("/api/v1/price-alerts/{id}", {
       params: { path: { id } },
-      body: patch as never,
+      body: patch,
       headers: AUTH_HEADERS,
     });
     return unwrap(data, error);

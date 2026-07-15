@@ -15,7 +15,7 @@ export const searchSetsTool = defineTool({
   }),
   handler: async (input: Record<string, unknown>) => {
     const { data, error } = await apiClient.GET("/api/v1/sets", {
-      params: { query: input as never },
+      params: { query: input },
     });
     return unwrap(data, error);
   },
@@ -52,7 +52,7 @@ export const listSetCardsTool = defineTool({
   }),
   handler: async ({ code, ...rest }: { code: string } & Record<string, unknown>) => {
     const { data, error } = await apiClient.GET("/api/v1/sets/{code}/cards", {
-      params: { path: { code }, query: rest as never },
+      params: { path: { code }, query: rest },
     });
     return unwrap(data, error);
   },

@@ -50,7 +50,7 @@ const SAMPLE_INPUTS: Record<string, unknown> = {
     isFoil: false,
     date: "2026-05-13",
   },
-  update_transaction: { id: 1, patch: { quantity: 1 } },
+  update_transaction: { id: 1, quantity: 1 },
   delete_transaction: { id: 1 },
   get_cost_basis: { cardId: "abc" },
   get_portfolio_summary: {},
@@ -318,7 +318,7 @@ describe("transaction tools", () => {
   });
 
   it("update_transaction: PUT /api/v1/transactions/{id} with patch body", async () => {
-    const r = await call("update_transaction", { id: 42, patch: { quantity: 3 } });
+    const r = await call("update_transaction", { id: 42, quantity: 3 });
     assert.equal(r.method, "PUT");
     assert.equal(r.url.pathname, "/api/v1/transactions/42");
     assert.equal(r.body, JSON.stringify({ quantity: 3 }));
