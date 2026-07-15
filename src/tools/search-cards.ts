@@ -28,8 +28,8 @@ export const searchCardsInputSchema = {
 };
 
 export async function searchCards(input: Record<string, unknown>) {
-  // zod validates the query at the tool boundary; the generated spec types
-  // most of these params as `unknown`, so cast rather than fight the spec.
+  // zod validates the query at the tool boundary; the generated spec now types
+  // these query params, so the validated input flows through without a cast.
   const { data, error } = await apiClient.GET("/api/v1/cards", {
     params: { query: input },
   });

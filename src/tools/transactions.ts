@@ -42,7 +42,7 @@ export const listTransactionsTool = defineTool({
     page: z.number().int().min(1).optional(),
     limit: z.number().int().min(1).max(100).optional(),
     sort: z.string().optional().describe("Sort key (e.g. TX_DATE, TX_TYPE, TX_CARD, TX_PRICE)."),
-    order: z.enum(["asc", "desc"]).optional(),
+    ascend: z.boolean().optional().describe("Sort direction: true for ascending, false for descending."),
     type: z.enum(["BUY", "SELL"]).optional(),
   }),
   handler: async (input: Record<string, unknown>) => {
