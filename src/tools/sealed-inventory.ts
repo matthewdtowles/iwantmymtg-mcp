@@ -26,7 +26,7 @@ export const listSealedInventoryTool = defineTool({
   }),
   handler: async (input: Record<string, unknown>) => {
     const { data, error } = await apiClient.GET("/api/v1/inventory/sealed", {
-      params: { query: input as never },
+      params: { query: input },
       headers: AUTH_HEADERS,
     });
     return unwrap(data, error);

@@ -2,6 +2,10 @@ import { z } from "zod";
 import { AUTH_HEADERS, apiClient, unwrap } from "../api-client.js";
 import { defineTool } from "./types.js";
 
+/** The colors filter only applies to the by=color breakdown; drop it otherwise (I9). */
+const colorsForBy = (by: string, colors?: string): string | undefined =>
+  by === "color" ? colors : undefined;
+
 export const getPortfolioSummaryTool = defineTool({
   name: "get_portfolio_summary",
   requiresAuth: true,
@@ -33,7 +37,7 @@ export const getPortfolioHistoryTool = defineTool({
   }),
   handler: async ({ days }: { days?: number }) => {
     const { data, error } = await apiClient.GET("/api/v1/portfolio/history", {
-      params: { query: { days } as never },
+      params: { query: { days } },
       headers: AUTH_HEADERS,
     });
     return unwrap(data, error);
@@ -52,7 +56,7 @@ export const getCardPerformanceTool = defineTool({
   }),
   handler: async (input: { type?: "best" | "worst"; limit?: number }) => {
     const { data, error } = await apiClient.GET("/api/v1/portfolio/performance", {
-      params: { query: input as never },
+      params: { query: input },
       headers: AUTH_HEADERS,
     });
     return unwrap(data, error);
@@ -109,9 +113,8 @@ export const getPortfolioBreakdownTool = defineTool({
       ),
   }),
   handler: async (input: { by: string; colors?: string }) => {
-    const colors = input.by === "color" ? input.colors : undefined;
     const { data, error } = await apiClient.GET("/api/v1/portfolio/breakdown", {
-      params: { query: { by: input.by, colors } as never },
+      params: { query: { by: input.by, colors: colorsForBy(input.by, input.colors) } },
       headers: AUTH_HEADERS,
     });
     return unwrap(data, error);
@@ -141,9 +144,10 @@ export const getPortfolioBreakdownCardsTool = defineTool({
       ),
   }),
   handler: async (input: { by: string; key: string; colors?: string }) => {
-    const colors = input.by === "color" ? input.colors : undefined;
     const { data, error } = await apiClient.GET("/api/v1/portfolio/breakdown/cards", {
-      params: { query: { by: input.by, key: input.key, colors } as never },
+      params: {
+        query: { by: input.by, key: input.key, colors: colorsForBy(input.by, input.colors) },
+      },
       headers: AUTH_HEADERS,
     });
     return unwrap(data, error);

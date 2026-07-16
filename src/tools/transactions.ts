@@ -42,12 +42,15 @@ export const listTransactionsTool = defineTool({
     page: z.number().int().min(1).optional(),
     limit: z.number().int().min(1).max(100).optional(),
     sort: z.string().optional().describe("Sort key (e.g. TX_DATE, TX_TYPE, TX_CARD, TX_PRICE)."),
-    order: z.enum(["asc", "desc"]).optional(),
+    ascend: z
+      .boolean()
+      .optional()
+      .describe("Sort direction: true for ascending, false for descending."),
     type: z.enum(["BUY", "SELL"]).optional(),
   }),
   handler: async (input: Record<string, unknown>) => {
     const { data, error } = await apiClient.GET("/api/v1/transactions", {
-      params: { query: input as never },
+      params: { query: input },
       headers: AUTH_HEADERS,
     });
     return unwrap(data, error);
@@ -62,7 +65,7 @@ export const recordTransactionTool = defineTool({
   inputSchema: transactionCreate,
   handler: async (input: z.infer<typeof transactionCreate>) => {
     const { data, error } = await apiClient.POST("/api/v1/transactions", {
-      body: input as never,
+      body: input,
       headers: AUTH_HEADERS,
     });
     return unwrap(data, error);
@@ -74,14 +77,13 @@ export const updateTransactionTool = defineTool({
   requiresAuth: true,
   description:
     "Update an existing transaction by ID. Only the fields supplied are changed. Card identity and type (BUY/SELL) cannot be changed via this endpoint - delete and re-create instead.",
-  inputSchema: z.object({
+  inputSchema: transactionUpdate.extend({
     id: z.number().int().min(1).describe("Transaction ID from list_transactions."),
-    patch: transactionUpdate,
   }),
-  handler: async ({ id, patch }: { id: number; patch: z.infer<typeof transactionUpdate> }) => {
+  handler: async ({ id, ...patch }: { id: number } & z.infer<typeof transactionUpdate>) => {
     const { data, error } = await apiClient.PUT("/api/v1/transactions/{id}", {
-      params: { path: { id } as never },
-      body: patch as never,
+      params: { path: { id } },
+      body: patch,
       headers: AUTH_HEADERS,
     });
     return unwrap(data, error);
@@ -96,7 +98,7 @@ export const deleteTransactionTool = defineTool({
   inputSchema: z.object({ id: z.number().int().min(1) }),
   handler: async ({ id }: { id: number }) => {
     const { data, error } = await apiClient.DELETE("/api/v1/transactions/{id}", {
-      params: { path: { id } as never },
+      params: { path: { id } },
       headers: AUTH_HEADERS,
     });
     return unwrap(data, error);
@@ -125,7 +127,7 @@ export const getCostBasisTool = defineTool({
     setNumber?: string;
     isFoil: boolean;
   }) => {
-    const query = { isFoil: input.isFoil } as never;
+    const query = { isFoil: input.isFoil };
     if (input.cardId) {
       const { data, error } = await apiClient.GET("/api/v1/transactions/cost-basis/{cardId}", {
         params: { path: { cardId: input.cardId }, query },

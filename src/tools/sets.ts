@@ -15,7 +15,7 @@ export const searchSetsTool = defineTool({
   }),
   handler: async (input: Record<string, unknown>) => {
     const { data, error } = await apiClient.GET("/api/v1/sets", {
-      params: { query: input as never },
+      params: { query: input },
     });
     return unwrap(data, error);
   },
@@ -52,7 +52,7 @@ export const listSetCardsTool = defineTool({
   }),
   handler: async ({ code, ...rest }: { code: string } & Record<string, unknown>) => {
     const { data, error } = await apiClient.GET("/api/v1/sets/{code}/cards", {
-      params: { path: { code }, query: rest as never },
+      params: { path: { code }, query: rest },
     });
     return unwrap(data, error);
   },
@@ -84,7 +84,7 @@ export const getSetPriceHistoryTool = defineTool({
     days: z.number().int().min(1).optional().describe("Number of days of history to return."),
   }),
   handler: async ({ code, days }: { code: string; days?: number }) => {
-    const query = days != null ? { days: String(days) } : undefined;
+    const query = days != null ? { days } : undefined;
     const { data, error } = await apiClient.GET("/api/v1/sets/{code}/price-history", {
       params: { path: { code }, query },
     });

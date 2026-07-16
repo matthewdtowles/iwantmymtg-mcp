@@ -63,7 +63,7 @@ export const createDeckTool = defineTool({
   }),
   handler: async (input) => {
     const { data, error } = await apiClient.POST("/api/v1/decks", {
-      body: { name: input.name, format: input.format } as never,
+      body: { name: input.name, format: input.format },
       headers: AUTH_HEADERS,
     });
     return unwrap(data, error);
@@ -82,7 +82,7 @@ export const importDeckTool = defineTool({
   }),
   handler: async (input) => {
     const { data, error } = await apiClient.POST("/api/v1/decks/import", {
-      body: { name: input.name, format: input.format, text: input.text } as never,
+      body: { name: input.name, format: input.format, text: input.text },
       headers: AUTH_HEADERS,
     });
     return unwrap(data, error);
@@ -101,7 +101,7 @@ export const updateDeckTool = defineTool({
   handler: async (input) => {
     const { data, error } = await apiClient.PATCH("/api/v1/decks/{id}", {
       params: { path: { id: input.deckId } },
-      body: { name: input.name, format: input.format } as never,
+      body: { name: input.name, format: input.format },
       headers: AUTH_HEADERS,
     });
     return unwrap(data, error);
