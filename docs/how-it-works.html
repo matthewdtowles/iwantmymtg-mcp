@@ -1,0 +1,565 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>iwantmymtg-mcp - how it works</title>
+<style>
+  :root {
+    --bg: #fbfaf8;
+    --surface: #ffffff;
+    --surface-2: #f3f1ed;
+    --ink: #1c1b19;
+    --ink-2: #55524d;
+    --ink-3: #85817a;
+    --rule: #e3dfd8;
+    --accent: #8a4b1f;
+    --code-bg: #f3f1ed;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16151a;
+      --surface: #1e1d23;
+      --surface-2: #26252c;
+      --ink: #ece9e4;
+      --ink-2: #b3aea6;
+      --ink-3: #837e77;
+      --rule: #33313a;
+      --accent: #e0a273;
+      --code-bg: #26252c;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 60rem; margin: 0 auto; padding: 3rem 1.5rem 6rem; }
+
+  header { border-bottom: 1px solid var(--rule); padding-bottom: 2rem; margin-bottom: 2.5rem; }
+  h1 { font-size: clamp(1.9rem, 4vw, 2.6rem); line-height: 1.15; margin: 0 0 .5rem; letter-spacing: -.02em; }
+  .sub { color: var(--ink-2); font-size: 1.05rem; margin: 0; max-width: 46rem; }
+  .meta { color: var(--ink-3); font-size: .85rem; margin-top: 1.25rem; }
+
+  h2 {
+    font-size: 1.4rem; letter-spacing: -.01em; margin: 3.5rem 0 1rem;
+    padding-top: 1.5rem; border-top: 1px solid var(--rule);
+  }
+  h2:first-of-type { border-top: 0; padding-top: 0; }
+  h3 { font-size: 1.05rem; margin: 2rem 0 .5rem; }
+  p { margin: 0 0 1rem; color: var(--ink-2); }
+  p.lead { color: var(--ink); }
+  ul, ol { color: var(--ink-2); padding-left: 1.25rem; }
+  li { margin-bottom: .4rem; }
+  a { color: var(--accent); }
+  strong { color: var(--ink); font-weight: 600; }
+
+  code {
+    font-family: var(--mono); font-size: .87em;
+    background: var(--code-bg); padding: .12em .38em; border-radius: 4px;
+  }
+  pre {
+    background: var(--surface); border: 1px solid var(--rule); border-radius: 8px;
+    padding: 1rem 1.1rem; overflow-x: auto; font-family: var(--mono);
+    font-size: .82rem; line-height: 1.6; color: var(--ink-2);
+  }
+  pre code { background: none; padding: 0; font-size: inherit; }
+
+  .flow {
+    background: var(--surface); border: 1px solid var(--rule); border-radius: 10px;
+    padding: 1.25rem; margin: 1.5rem 0; overflow-x: auto;
+  }
+  .flow pre { background: none; border: 0; padding: 0; color: var(--ink); font-size: .8rem; }
+
+  details {
+    background: var(--surface); border: 1px solid var(--rule); border-radius: 10px;
+    margin: .6rem 0; overflow: hidden;
+  }
+  details[open] { border-color: var(--ink-3); }
+  summary {
+    cursor: pointer; padding: .85rem 1.1rem; list-style: none;
+    display: flex; align-items: baseline; gap: .6rem; font-weight: 600;
+  }
+  summary::-webkit-details-marker { display: none; }
+  summary::before {
+    content: "▸"; color: var(--ink-3); font-weight: 400;
+    transition: transform .15s ease; display: inline-block;
+  }
+  details[open] > summary::before { transform: rotate(90deg); }
+  summary:hover { background: var(--surface-2); }
+  summary .file { font-family: var(--mono); font-size: .85rem; font-weight: 600; }
+  summary .what { font-weight: 400; color: var(--ink-3); font-size: .85rem; }
+  .body { padding: 0 1.1rem 1.1rem; border-top: 1px solid var(--rule); padding-top: 1rem; }
+  .body > :last-child { margin-bottom: 0; }
+  details details { background: var(--surface-2); }
+
+  table { border-collapse: collapse; width: 100%; font-size: .88rem; margin: 1rem 0; }
+  th, td { text-align: left; padding: .5rem .7rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  th { color: var(--ink-3); font-weight: 600; font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; }
+  td { color: var(--ink-2); }
+  td code { white-space: nowrap; }
+  .scroll { overflow-x: auto; }
+
+  .note {
+    border-left: 3px solid var(--accent); background: var(--surface);
+    padding: .8rem 1rem; margin: 1.25rem 0; font-size: .92rem; border-radius: 0 6px 6px 0;
+  }
+  .note p { margin: 0; }
+
+  .tag {
+    display: inline-block; font-size: .7rem; font-family: var(--mono);
+    padding: .1rem .4rem; border-radius: 4px; background: var(--surface-2);
+    color: var(--ink-3); border: 1px solid var(--rule); vertical-align: middle;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>iwantmymtg-mcp: how it works</h1>
+  <p class="sub">A personal walkthrough of the MCP server - what it is, the one path a request takes end to end,
+  then every file drilled down in the order you'd hit it.</p>
+  <p class="meta">Repo: <code>~/projects/iwantmymtg-mcp</code> · 59 tools · Node ≥20, TypeScript ESM, stdio transport</p>
+</header>
+
+<h2>The gist, in one paragraph</h2>
+
+<p class="lead">This is a <strong>thin, typed adapter</strong>. It owns no data and no business logic. An MCP client
+(Claude Desktop, Claude Code, Cursor) launches <code>dist/index.js</code> as a subprocess and talks JSON-RPC to it
+over stdin/stdout. The server advertises 59 tools; when the model calls one, the server validates the arguments with
+a zod schema, turns them into an HTTP request against the public <code>iwantmymtg.net</code> REST API, and hands the
+JSON back as text. Everything real - the cards, the prices, your collection, the Premium gating - lives behind that
+API. If a tool touches your own data it sends your <code>IWMM_API_KEY</code> as a bearer token; the 11 catalog tools
+(cards, sets, prices) need no key at all.</p>
+
+<p>The two design ideas worth holding onto: <strong>the API's OpenAPI spec is the source of truth for types</strong>
+(they're code-generated at build time, so a backend change that breaks a tool is a compile error), and
+<strong>every fact about a tool is structured data on the tool object</strong>, not prose - <code>requiresAuth</code>
+drives the docs, the description suffix, and a test, so the three can't drift apart.</p>
+
+<h2>One request, end to end</h2>
+
+<p>Say the model calls <code>get_card</code> with <code>{ setCode: "lea", setNumber: "161" }</code>. This is the
+whole path:</p>
+
+<div class="flow">
+<pre>  MCP client (Claude Desktop / Code / Cursor)
+        │  spawns `node dist/index.js`, speaks JSON-RPC over stdio
+        ▼
+  index.ts                 process entry; catches fatal errors → stderr
+        ▼
+  server.ts                MCP Server + StdioServerTransport
+        │
+        ├─ ListTools  ──►  listTools()         reads the registry, zod → JSON Schema
+        │
+        └─ CallTool   ──►  handleCallTool(name, args)
+                              │
+                              │ 1. look up the tool     tools/index.ts   (toolsByName)
+                              │ 2. validate args        tool.inputSchema.safeParse()
+                              │ 3. run it               tool.handler(args)
+                              │        │
+                              │        ▼
+                              │   tools/get-card.ts     apiClient.GET("/api/v1/cards/{setCode}/{setNumber}")
+                              │        │
+                              │        ▼
+                              │   api-client.ts         onRequest:  UA, Accept, Bearer token if opted in
+                              │        │                onResponse: !ok → throw ApiError
+                              │        ▼
+                              │   https://iwantmymtg.net/api/v1/...    ← the real system
+                              │        │
+                              │        ▼
+                              │   unwrap(data, error)   returns data, rethrows non-HTTP failures
+                              │
+                              │ 4. shape the result     undefined → "OK" | string → as-is | object → JSON
+                              └─ on throw:              error-formatter.ts → friendly text, isError: true
+        ▼
+  MCP client renders the text block to the model</pre>
+</div>
+
+<p>Four places can end the call, and each has a distinct shape: unknown tool name, invalid arguments, a thrown
+<code>ApiError</code>, or a successful result. <code>handleCallTool</code> is exported separately from the request
+handler purely so those four branches are unit-testable without standing up a transport.</p>
+
+<h2>The layers</h2>
+
+<div class="scroll">
+<table>
+  <tr><th>Layer</th><th>Files</th><th>Responsibility</th></tr>
+  <tr><td>Entry</td><td><code>index.ts</code></td><td>Start the server; fatal errors to stderr (stdout is the transport).</td></tr>
+  <tr><td>Protocol</td><td><code>server.ts</code></td><td>MCP wiring: list tools, dispatch calls, shape results and errors.</td></tr>
+  <tr><td>Registry</td><td><code>tools/index.ts</code>, <code>tools/types.ts</code></td><td>The tool contract and the one array every tool lives in.</td></tr>
+  <tr><td>Tools</td><td><code>tools/*.ts</code> (12 groups)</td><td>One file per domain. Schema + description + handler per tool.</td></tr>
+  <tr><td>Transport</td><td><code>api-client.ts</code>, <code>config.ts</code></td><td>Typed HTTP client, auth middleware, env config.</td></tr>
+  <tr><td>Presentation</td><td><code>error-formatter.ts</code></td><td>Turn HTTP failures into something the model can act on.</td></tr>
+  <tr><td>Generated</td><td><code>generated/api-types.ts</code></td><td>OpenAPI → TypeScript. Never edited by hand.</td></tr>
+</table>
+</div>
+
+<h2>Drill down: every file</h2>
+
+<p>Ordered the way a request flows. Open one for the detail.</p>
+
+<details>
+  <summary><span class="file">src/index.ts</span> <span class="what">- process entry, 8 lines</span></summary>
+  <div class="body">
+    <p>A shebang (<code>#!/usr/bin/env node</code>, so npm can expose it as the <code>iwantmymtg-mcp</code> bin),
+    a call to <code>startServer()</code>, and a catch that writes to <strong>stderr</strong> and exits 1.</p>
+    <p>The stderr detail is not cosmetic: stdout <em>is</em> the MCP transport. Anything you
+    <code>console.log</code> anywhere in this codebase corrupts the JSON-RPC stream and the client
+    disconnects. If you're ever debugging this thing, log to stderr.</p>
+  </div>
+</details>
+
+<details>
+  <summary><span class="file">src/server.ts</span> <span class="what">- MCP protocol wiring</span></summary>
+  <div class="body">
+    <p>Three exports, and the split is deliberate - the first two are pure functions so tests can call them directly.</p>
+
+    <details>
+      <summary><span class="file">listTools()</span> <span class="what">- builds the ListTools response</span></summary>
+      <div class="body">
+        <p>Maps the registry into what the client sees. Three things happen here that are worth knowing:</p>
+        <ul>
+          <li><strong>The auth suffix is derived.</strong> If <code>requiresAuth</code> is true the description gets
+          <code>"Requires IWMM_API_KEY."</code> appended. Nobody types that into a description by hand, so it can't
+          go stale when a tool's auth-ness changes.</li>
+          <li><strong>zod → JSON Schema</strong> via <code>zodToJsonSchema</code>, using the default
+          <code>jsonSchema7</code> target. Not the <code>openApi3</code> target: that one emits
+          <code>nullable: true</code>, which strict clients reject on fields like
+          <code>update_price_alert</code>'s nullable thresholds.</li>
+          <li><strong>Annotations.</strong> <code>readOnly</code> and <code>destructive</code> become MCP's
+          <code>readOnlyHint</code> / <code>destructiveHint</code>, so a client can require confirmation before
+          <code>delete_deck</code> instead of guessing from the description text.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details>
+      <summary><span class="file">handleCallTool(name, rawArgs)</span> <span class="what">- runs one tool call</span></summary>
+      <div class="body">
+        <p>The four branches, in order:</p>
+        <ol>
+          <li><strong>Unknown tool</strong> → <code>isError: true</code>, "Unknown tool: x".</li>
+          <li><strong>Invalid args</strong> → <code>safeParse</code> fails, the zod message goes back verbatim so the
+          model can correct itself and retry.</li>
+          <li><strong>Handler throws</strong> → <code>formatError(err)</code>, <code>isError: true</code>. Never
+          crashes the process.</li>
+          <li><strong>Success</strong> → result is shaped: <code>undefined</code> (a 204) becomes the literal
+          <code>"OK"</code>, a <code>string</code> (CSV exports) passes through unencoded, anything else is
+          <code>JSON.stringify(..., null, 2)</code>.</li>
+        </ol>
+        <p>That <code>undefined → "OK"</code> case matters: <code>JSON.stringify(undefined)</code> is
+        <code>undefined</code>, which would produce a text content block with no <code>text</code> field - invalid
+        MCP, and a confusing client-side failure.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary><span class="file">startServer()</span> <span class="what">- boots the SDK server</span></summary>
+      <div class="body">
+        <p>Constructs the SDK <code>Server</code> with name + version, declares the <code>tools</code> capability,
+        registers the two request handlers, and connects a <code>StdioServerTransport</code>. Stdio is the only
+        transport here - the streamable-HTTP variant of this server lives in the main web app at
+        <code>/mcp</code>, not in this repo.</p>
+      </div>
+    </details>
+  </div>
+</details>
+
+<details>
+  <summary><span class="file">src/tools/types.ts</span> <span class="what">- the tool contract (read this one first)</span></summary>
+  <div class="body">
+    <p>The most load-bearing 40 lines in the repo. Defines <code>ToolDefinition&lt;S&gt;</code>, generic over its own
+    zod schema, and the <code>defineTool</code> factory.</p>
+
+    <pre><code>interface ToolDefinition&lt;S extends z.ZodTypeAny&gt; {
+  name: string;
+  description: string;
+  requiresAuth: boolean;
+  readOnly?: boolean;      // → MCP readOnlyHint
+  destructive?: boolean;   // → MCP destructiveHint
+  inputSchema: S;
+  handler: (input: z.output&lt;S&gt;) =&gt; Promise&lt;unknown&gt;;
+}</code></pre>
+
+    <p><strong>Why generic:</strong> the handler's parameter type is <em>inferred from the schema</em> via
+    <code>z.output&lt;S&gt;</code>. There are no hand-written handler input types to drift, and a schema/handler
+    mismatch fails the build rather than surfacing as a runtime shape bug.</p>
+
+    <p><strong>Why <code>defineTool</code> exists:</strong> it's an identity function that pins the generic at the
+    definition site so TypeScript checks the handler against the schema there, but it <em>returns the erased</em>
+    <code>ToolDefinition</code>. <code>ToolDefinition</code> is invariant in <code>S</code> (the handler parameter is
+    contravariant), so the narrow form wouldn't be assignable into a single <code>ToolDefinition[]</code>. The cast
+    goes through <code>unknown</code> because a direct one is rejected. Runtime object is unchanged.</p>
+
+    <p class="note"><strong>Rule of thumb:</strong> never construct a tool object literally. Always go through
+    <code>defineTool</code>, or you lose the schema↔handler check.</p>
+  </div>
+</details>
+
+<details>
+  <summary><span class="file">src/tools/index.ts</span> <span class="what">- the registry</span></summary>
+  <div class="body">
+    <p>Imports every tool and puts them in one ordered <code>tools: ToolDefinition[]</code>, grouped by comment
+    (read-only → sell → buy-list → inventory → sealed → transactions → portfolio → decks → alerts → notifications).
+    Then <code>toolsByName</code>, an <code>Object.fromEntries</code> lookup used by the dispatcher.</p>
+    <p>This array is the single source for four consumers: the ListTools response, the dispatcher,
+    <code>docs/TOOLS.md</code> generation, and the tests. <strong>Adding a tool is two edits</strong> - define it in
+    its group file, add it to this array - and then <code>npm run gen:tools-doc</code>, which CI enforces.</p>
+  </div>
+</details>
+
+<details>
+  <summary><span class="file">src/tools/schemas.ts</span> <span class="what">- shared zod primitives</span></summary>
+  <div class="body">
+    <p>The building blocks defined once so they can't drift between tools: <code>FORMATS</code> /
+    <code>formatEnum</code> (the canonical 11 formats, shared by search, sets, and decks), <code>idParam</code>
+    (<code>z.coerce.number().int().min(1)</code> - coerces because path params arrive as strings),
+    <code>cardIdSchema</code> (the internal card UUID), <code>pageParam</code>, <code>limitParam</code> (capped at
+    the API's max of 100), and <code>cardKey</code> (the <code>{ setCode, setNumber }</code> pair that addresses one
+    printing).</p>
+    <p>zod schemas are immutable, so consumers freely chain <code>.optional()</code> / <code>.describe()</code>
+    without mutating the shared base.</p>
+  </div>
+</details>
+
+<details>
+  <summary><span class="file">src/tools/*.ts</span> <span class="what">- the 12 tool groups, 59 tools</span></summary>
+  <div class="body">
+    <p>One file per domain. Every tool is the same four-part shape, so once you've read one you've read all of them:
+    a name, structured flags, a description written <em>for the model</em>, an input schema, and a handler that is
+    usually three lines of <code>apiClient</code> call.</p>
+
+    <div class="scroll">
+    <table>
+      <tr><th>File</th><th>Tools</th><th>Notes</th></tr>
+      <tr><td><code>search-cards.ts</code></td><td>1</td><td>Catalog search. Has a <code>.refine()</code>: <code>legality</code> is only valid alongside <code>format</code>.</td></tr>
+      <tr><td><code>get-card.ts</code></td><td>3</td><td>One printing: detail, prices, 30-day price history.</td></tr>
+      <tr><td><code>sets.ts</code></td><td>6</td><td>Set search/detail, cards in a set, sealed products, set price history.</td></tr>
+      <tr><td><code>sell-tools.ts</code></td><td>3</td><td>Card buylist (open), market sell value + cash-vs-credit (auth).</td></tr>
+      <tr><td><code>buy-list.ts</code></td><td>5</td><td>The want list: list / add / update / remove / import.</td></tr>
+      <tr><td><code>inventory.ts</code></td><td>7</td><td>The collection. Writes are batch-shaped (<code>{ items: [...] }</code>).</td></tr>
+      <tr><td><code>sealed-inventory.ts</code></td><td>3</td><td>Sealed product holdings; writes are Premium.</td></tr>
+      <tr><td><code>transactions.ts</code></td><td>5</td><td>The ledger + cost basis.</td></tr>
+      <tr><td><code>portfolio.ts</code></td><td>8</td><td>Summary, history, performance, cash flow, gains, breakdowns, refresh. Mostly Premium.</td></tr>
+      <tr><td><code>decks.ts</code></td><td>10</td><td>Deck CRUD, card add/remove/set-quantity, import, missing→buy-list.</td></tr>
+      <tr><td><code>alerts.ts</code></td><td>4</td><td>Price alert CRUD.</td></tr>
+      <tr><td><code>notifications.ts</code></td><td>4</td><td>List, unread count, mark read, mark all read.</td></tr>
+    </table>
+    </div>
+
+    <details>
+      <summary><span class="file">The shape of a tool</span> <span class="what">- get_card, annotated</span></summary>
+      <div class="body">
+<pre><code>export const getCardTool = defineTool({
+  name: "get_card",
+  requiresAuth: false,       // no Bearer token; also drives docs + description suffix
+  readOnly: true,            // → MCP readOnlyHint
+  description:
+    "Look up a specific card printing by set code and collector number. ... " +
+    "For broader catalog search use search_cards.",
+  inputSchema: z.object(getCardInputSchema),
+  handler: getCard,
+});</code></pre>
+        <p>Note the description's last clause. These are <strong>prompts, not docs</strong> - they're the only thing
+        the model reads when choosing between 59 tools, so the good ones say when <em>not</em> to use this tool and
+        which one to use instead. Same reason <code>setNumber</code>'s <code>.describe()</code> explains it's a
+        string because of suffixes like <code>'12a'</code>: without that, models pass an int and get a 404.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary><span class="file">Authenticated tools</span> <span class="what">- the AUTH_HEADERS opt-in</span></summary>
+      <div class="body">
+<pre><code>handler: async (input) =&gt; {
+  const { data, error } = await apiClient.GET("/api/v1/inventory", {
+    params: { query: input },
+    headers: AUTH_HEADERS,        // ← the opt-in
+  });
+  return unwrap(data, error);
+}</code></pre>
+        <p><code>AUTH_HEADERS</code> is the sentinel <code>{ "X-IWMM-Auth": "required" }</code>. The client
+        middleware swaps it for a real <code>Authorization: Bearer</code> header. Auth is <strong>opt-in per
+        request</strong>, so a catalog tool physically cannot leak your key.</p>
+        <p>The flag and the header must agree: <code>requiresAuth: true</code> plus <code>AUTH_HEADERS</code>. A test
+        asserts this invariant across the whole registry, because getting it half-right is the easy mistake -
+        <code>requiresAuth: true</code> without the header means the call silently runs unauthenticated and 401s
+        confusingly.</p>
+      </div>
+    </details>
+  </div>
+</details>
+
+<details>
+  <summary><span class="file">src/api-client.ts</span> <span class="what">- the typed HTTP layer</span></summary>
+  <div class="body">
+    <p>Wraps <code>openapi-fetch</code> around the generated <code>paths</code> type, so
+    <code>apiClient.GET("/api/v1/cards/{setCode}/{setNumber}")</code> is checked against the real spec - a typo'd
+    path or a renamed param is a compile error, not a 404 in production.</p>
+
+    <details>
+      <summary><span class="file">authMiddleware</span> <span class="what">- headers in, errors out</span></summary>
+      <div class="body">
+        <p><strong>onRequest:</strong> sets <code>User-Agent: iwantmymtg-mcp/&lt;version&gt;</code> and
+        <code>Accept: application/json</code>; if the request carries <code>X-IWMM-Auth: required</code>, deletes
+        that sentinel and sets <code>Authorization: Bearer &lt;key&gt;</code> via <code>requireApiKey()</code> -
+        which throws a message telling you exactly where to create a key if it's missing.</p>
+        <p><strong>onResponse:</strong> any non-2xx becomes a thrown <code>ApiError</code> carrying status, body
+        text, and the <code>X-RateLimit-*</code> headers. That's why handlers have no error handling: every HTTP
+        failure is already an exception by the time <code>unwrap</code> sees it.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary><span class="file">getClient() / the Proxy</span> <span class="what">- lazy + memoized</span></summary>
+      <div class="body">
+        <p>The exported <code>apiClient</code> is a <code>Proxy</code> whose getter calls <code>getClient()</code>.
+        Two constraints are being satisfied at once:</p>
+        <ul>
+          <li><strong>Lazy</strong>, so tests can stub <code>globalThis.fetch</code> after module load and so
+          <code>config.baseUrl</code> is read at call time, not import time.</li>
+          <li><strong>Memoized</strong>, so we don't rebuild the client and re-register middleware on every property
+          access. The cache is keyed on <code>baseUrl</code> and rebuilds when it changes, which preserves the
+          "config picked up at call time" contract.</li>
+        </ul>
+        <p><code>fetch</code> is indirected through <code>globalThis.fetch</code> at call time rather than captured,
+        so stubbing still works even against a memoized client.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary><span class="file">unwrap(data, error)</span> <span class="what">- the last three lines</span></summary>
+      <div class="body">
+        <p><code>openapi-fetch</code> returns <code>{ data, error }</code>. HTTP failures were already thrown by the
+        middleware, so <code>error</code> here only ever carries non-HTTP failures - network errors, DNS. Those get
+        rethrown (normalized to an <code>Error</code>); otherwise <code>data</code> comes back.</p>
+      </div>
+    </details>
+  </div>
+</details>
+
+<details>
+  <summary><span class="file">src/config.ts</span> <span class="what">- environment, read lazily</span></summary>
+  <div class="body">
+    <p>Two env vars, both exposed as <em>getters</em> rather than captured constants so callers and tests see live
+    values instead of an import-time snapshot:</p>
+    <div class="scroll">
+    <table>
+      <tr><th>Var</th><th>Default</th><th>Meaning</th></tr>
+      <tr><td><code>IWMM_BASE_URL</code></td><td><code>https://iwantmymtg.net</code></td><td>Point at localhost to develop against a local backend.</td></tr>
+      <tr><td><code>IWMM_API_KEY</code></td><td>none</td><td><code>iwm_live_…</code>, from <code>/user/api-keys</code>. Only the 48 authenticated tools need it.</td></tr>
+    </table>
+    </div>
+    <p><code>requireApiKey()</code> is the accessor that throws when it's missing, and its message names the setting
+    and the URL to create a key - the error surfaces to the model, which then tells you what to do.</p>
+  </div>
+</details>
+
+<details>
+  <summary><span class="file">src/error-formatter.ts</span> <span class="what">- failures the model can act on</span></summary>
+  <div class="body">
+    <p>Turns an <code>ApiError</code> into text worth showing. The status-specific cases exist because each one has a
+    different <em>user action</em>:</p>
+    <div class="scroll">
+    <table>
+      <tr><th>Status</th><th>Message</th><th>Because</th></tr>
+      <tr><td><code>401</code></td><td>"Not authenticated. Set IWMM_API_KEY…"</td><td>Missing or bad key - a config fix.</td></tr>
+      <tr><td><code>402</code> / <code>403</code></td><td>API detail + upgrade link</td><td>Premium gating - a subscription decision, not a bug.</td></tr>
+      <tr><td><code>429</code></td><td>"Rate limit exceeded. Resets at …"</td><td>Retry later; the reset time comes from the response header.</td></tr>
+      <tr><td>other</td><td>Status + rate-limit remaining + API message</td><td>Generic, but keeps the useful context.</td></tr>
+    </table>
+    </div>
+    <p><code>extractApiMessage</code> parses the body defensively - it handles a string <code>message</code>, an
+    <em>array</em> of messages (NestJS validation pipes emit those; they get joined with "; "), and a string
+    <code>error</code>. A non-JSON body falls through to <code>undefined</code> and the raw body is used.</p>
+  </div>
+</details>
+
+<details>
+  <summary><span class="file">src/generated/api-types.ts</span> <span class="what">- do not edit</span></summary>
+  <div class="body">
+    <p>Generated by <code>openapi-typescript</code> from the live spec at
+    <code>https://iwantmymtg.net/api/openapi.json</code>. It's checked in so builds work offline and so the diff is
+    reviewable when the backend changes.</p>
+    <p><code>scripts/build-types.mjs</code> runs as <code>prebuild</code>, so a plain <code>npm run build</code>
+    regenerates it first. Offline or the API is down? <code>IWMM_SKIP_TYPEGEN=1 npm run build</code> uses the
+    checked-in copy. Different backend? <code>IWMM_OPENAPI_URL=…</code>.</p>
+    <p class="note"><strong>This is the coupling to the web repo.</strong> When the API adds or changes an endpoint,
+    rebuild here and the compiler tells you what broke. That's the whole point - it's why the tools have almost no
+    defensive runtime checks.</p>
+  </div>
+</details>
+
+<details>
+  <summary><span class="file">src/version.ts</span> <span class="what">- version, via createRequire</span></summary>
+  <div class="body">
+    <p>Reads <code>version</code> out of <code>package.json</code>. Uses <code>createRequire(import.meta.url)</code>
+    because this is an ESM package and JSON import assertions are still awkward across Node versions.</p>
+    <p>Feeds two things: the <code>User-Agent</code> and the MCP server identity in the handshake.
+    <code>package.json</code> sits at <code>0.0.0-dev</code> - CI stamps the real version at publish, same
+    convention as the web repo.</p>
+  </div>
+</details>
+
+<h2>Build, test, ship</h2>
+
+<div class="scroll">
+<table>
+  <tr><th>Command</th><th>Does</th></tr>
+  <tr><td><code>npm run build</code></td><td><code>prebuild</code> regenerates OpenAPI types, then <code>tsc</code> → <code>dist/</code>.</td></tr>
+  <tr><td><code>npm test</code></td><td><code>node --test</code> with <code>tsx</code> over <code>test/*.test.ts</code>. No test framework dependency.</td></tr>
+  <tr><td><code>npm run lint</code></td><td>Biome check (lint + format + import sort) over <code>src test scripts</code>.</td></tr>
+  <tr><td><code>npm run gen:tools-doc</code></td><td>Regenerates <code>docs/TOOLS.md</code> from the registry. <code>check:tools-doc</code> fails CI if it's stale.</td></tr>
+  <tr><td><code>npm run bundle</code></td><td><code>scripts/build-mcpb.sh</code> → the <code>.mcpb</code> one-click bundle.</td></tr>
+</table>
+</div>
+
+<h3>The four test files</h3>
+<ul>
+  <li><code>api-client.test.ts</code> - middleware behavior: headers set, auth sentinel swapped, <code>ApiError</code> thrown with rate-limit data.</li>
+  <li><code>error-formatter.test.ts</code> - one case per status branch, plus the body-parsing shapes.</li>
+  <li><code>server.test.ts</code> - the four <code>handleCallTool</code> branches and the <code>listTools</code> mapping.</li>
+  <li><code>tools.test.ts</code> - registry invariants: unique names, and <strong>every <code>requiresAuth</code> tool actually sends <code>AUTH_HEADERS</code></strong>.</li>
+</ul>
+
+<h3>Distribution</h3>
+<p>Four channels, all pointing at the same stdio server:</p>
+<ul>
+  <li><strong>npm</strong> - <code>npx -y iwantmymtg-mcp</code>, via the <code>bin</code> entry.</li>
+  <li><strong>MCPB bundle</strong> - <code>manifest.json</code> + <code>scripts/build-mcpb.sh</code>. Stages a
+  production-only copy (<code>npm ci --omit=dev</code>), syncs the manifest version from <code>package.json</code>
+  so they can't drift, packs with <code>@anthropic-ai/mcpb</code>. One-click install in Claude Desktop.</li>
+  <li><strong>Smithery</strong> - <code>smithery.yaml</code>. Its <code>configSchema</code> declares
+  <code>iwmmApiKey</code> as <em>optional</em>, which is the honest framing: the catalog tools work without one.
+  <code>commandFunction</code> just shells out to <code>npx</code>.</li>
+  <li><strong>MCP registry</strong> - <code>server.json</code>, keyed on the <code>mcpName</code>
+  <code>io.github.matthewdtowles/iwantmymtg-mcp</code>.</li>
+</ul>
+
+<h2>Things worth remembering</h2>
+<ul>
+  <li><strong>stdout is sacred.</strong> Log to stderr or you break the transport.</li>
+  <li><strong>Adding a tool is two edits plus a doc regen</strong>: define it with <code>defineTool</code> in its
+  group file, add it to <code>tools/index.ts</code>, run <code>npm run gen:tools-doc</code>.</li>
+  <li><strong>Descriptions are prompts.</strong> The model picks among 59 tools using nothing else. Say when to use
+  a different tool.</li>
+  <li><strong>Auth is opt-in per request</strong>, via <code>AUTH_HEADERS</code>. Keep <code>requiresAuth</code> and
+  the header in sync - there's a test, but know why it's there.</li>
+  <li><strong>No business logic belongs here.</strong> If a tool wants to compute something, that computation
+  probably belongs behind the API where the web app and the mobile app get it too.</li>
+  <li><strong>Backend changed?</strong> Rebuild - the generated types turn API drift into compile errors. That's the
+  safety net this design buys.</li>
+</ul>
+
+<p class="meta">Related: <code>docs/TOOLS.md</code> (generated tool catalog) · <code>docs/CODEBASE_ANALYSIS.md</code>
+(the July 2026 analysis) · <code>ONBOARDING.md</code> · <code>CONTRIBUTING.md</code></p>
+
+</div>
+</body>
+</html>
