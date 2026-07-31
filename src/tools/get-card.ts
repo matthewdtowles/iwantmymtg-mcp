@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { apiClient, unwrap } from "../api-client.js";
+import { limitParam, pageParam } from "./schemas.js";
 import { defineTool } from "./types.js";
 
 export const getCardInputSchema = {
@@ -39,6 +40,25 @@ export const getCardPricesTool = defineTool({
   handler: async (input: CardKey) => {
     const { data, error } = await apiClient.GET("/api/v1/cards/{setCode}/{setNumber}/prices", {
       params: { path: input },
+    });
+    return unwrap(data, error);
+  },
+});
+
+export const getCardPrintingsTool = defineTool({
+  name: "get_card_printings",
+  requiresAuth: false,
+  readOnly: true,
+  description:
+    "List every printing of the card at this set code and collector number, most valuable first. Use this to compare what the same card costs across sets, or to find a cheaper printing. Prefer it over search_cards for that: search_cards matches names by substring, so it also returns unrelated cards whose names merely contain the term. The addressed printing is included in the results.",
+  inputSchema: z.object({
+    ...getCardInputSchema,
+    page: pageParam.optional().describe("1-based page index."),
+    limit: limitParam.optional().describe("Page size (max 100)."),
+  }),
+  handler: async ({ setCode, setNumber, ...query }) => {
+    const { data, error } = await apiClient.GET("/api/v1/cards/{setCode}/{setNumber}/printings", {
+      params: { path: { setCode, setNumber }, query },
     });
     return unwrap(data, error);
   },

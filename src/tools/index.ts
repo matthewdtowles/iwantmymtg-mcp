@@ -18,7 +18,12 @@ import {
   setDeckCardQuantityTool,
   updateDeckTool,
 } from "./decks.js";
-import { getCardPriceHistoryTool, getCardPricesTool, getCardTool } from "./get-card.js";
+import {
+  getCardPriceHistoryTool,
+  getCardPricesTool,
+  getCardPrintingsTool,
+  getCardTool,
+} from "./get-card.js";
 import {
   addInventoryTool,
   exportInventoryTool,
@@ -76,6 +81,7 @@ export const tools: ToolDefinition[] = [
   getCardTool,
   getCardPricesTool,
   getCardPriceHistoryTool,
+  getCardPrintingsTool,
   searchSetsTool,
   getSetTool,
   listSetCardsTool,
