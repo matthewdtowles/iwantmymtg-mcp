@@ -2,9 +2,9 @@
      Run `npm run gen:tools-doc` after changing tools; CI enforces this. -->
 # Tools
 
-59 tools total. Generated from `src/tools/index.ts`.
+60 tools total. Generated from `src/tools/index.ts`.
 
-## No API key required (11)
+## No API key required (12)
 
 | Tool | Description |
 | --- | --- |
@@ -12,6 +12,7 @@
 | `get_card` | Look up a specific card printing by set code and collector number. Returns full card detail including current prices, rarity, type, and flavor name. For broader catalog search use search_cards. |
 | `get_card_prices` | Get current normal and foil prices for a specific card printing. |
 | `get_card_price_history` | Get the 30-day price history for a card printing (normal + foil). Older data is retained on a weekly/monthly cadence beyond 30 days. |
+| `get_card_printings` | List every printing of the card at this set code and collector number, most valuable first. Use this to compare what the same card costs across sets, or to find a cheaper printing. Prefer it over search_cards for that: search_cards matches names by substring, so it also returns unrelated cards whose names merely contain the term. The addressed printing is included in the results. |
 | `search_sets` | List Magic: The Gathering sets, optionally paginated. Returns set code, name, release date, type, and aggregate prices. |
 | `get_set` | Get detail for a single set by code (e.g. 'lea', 'mh3'). |
 | `list_set_cards` | List all cards in a set, paginated. Supports the same filters as search_cards (rarity, type, format, legality). |

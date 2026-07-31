@@ -73,6 +73,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Register a new account; emails a verification link to complete signup */
+        post: operations["AuthApiController_register"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/verify-email": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Verify an emailed token and obtain access + refresh tokens (completes signup) */
+        post: operations["AuthApiController_verifyEmail"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/refresh": {
         parameters: {
             query?: never;
@@ -329,6 +363,23 @@ export interface paths {
         };
         /** Get price history for a card by set code and number */
         get: operations["getCardPriceHistoryBySetAndNumber"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/cards/{setCode}/{setNumber}/printings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List every printing of this card, most valuable first */
+        get: operations["getCardPrintings"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1123,10 +1174,6 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        CreateApiKeyDto: {
-            /** @description User-supplied label for the key */
-            name: string;
-        };
         PaginationMeta: {
             page: number;
             limit: number;
@@ -1140,6 +1187,30 @@ export interface components {
             totalPages: number;
             multiSetBlockKeys?: string[];
         };
+        ApiKeyDto: {
+            id: number;
+            name: string;
+            /** @description Visible key prefix (iwm_live_ + first 4 chars) */
+            keyPrefix: string;
+            lastUsedAt?: string | null;
+            revokedAt?: string | null;
+            createdAt: string;
+        };
+        CreatedApiKeyDto: {
+            id: number;
+            name: string;
+            /** @description Visible key prefix (iwm_live_ + first 4 chars) */
+            keyPrefix: string;
+            lastUsedAt?: string | null;
+            revokedAt?: string | null;
+            createdAt: string;
+            /** @description Raw key. Shown ONCE at creation; cannot be retrieved later. */
+            rawKey: string;
+        };
+        CreateApiKeyDto: {
+            /** @description User-supplied label for the key */
+            name: string;
+        };
         LoginResponseDto: {
             /** @description Short-lived JWT for the Authorization header. */
             accessToken: string;
@@ -1152,6 +1223,33 @@ export interface components {
             password: string;
             /**
              * @description Optional client/device label stored with the refresh token so a user can tell their sessions apart.
+             * @example iPhone 15
+             */
+            deviceLabel?: string;
+        };
+        RegisterResponseDto: {
+            /** @description A uniform acknowledgement shown regardless of whether the email was new, already registered, or already pending — the response never reveals which. */
+            message: string;
+        };
+        RegisterRequestDto: {
+            /** @example user@example.com */
+            email: string;
+            /**
+             * @description Display name. Letters, numbers, spaces, hyphens, and underscores only.
+             * @example planeswalker42
+             */
+            name: string;
+            /**
+             * @description At least 8 characters with at least 1 uppercase, 1 lowercase, 1 number, and 1 special character.
+             * @example Sup3rSecret!
+             */
+            password: string;
+        };
+        VerifyEmailRequestDto: {
+            /** @description The raw verification token from the emailed link (its `token` query param). */
+            token: string;
+            /**
+             * @description Optional device label stored with the refresh token issued on success.
              * @example iPhone 15
              */
             deviceLabel?: string;
@@ -1317,6 +1415,10 @@ export interface components {
             id: number;
             name: string;
             format?: string | null;
+            /** @description Art-crop URL of the deck's representative card — its commander, the card it is named after, or its most valuable creature. Ready to render as-is. Absent for an empty deck. */
+            coverImgSrc?: string;
+            /** @description The cover card's name, for alt text. */
+            coverCardName?: string;
             /** @description Total card count (sum of quantities, main + side). */
             cardCount: number;
             estimatedValue: number;
@@ -1345,6 +1447,10 @@ export interface components {
             id: number;
             name: string;
             format?: string | null;
+            /** @description Art-crop URL of the deck's representative card — its commander, the card it is named after, or its most valuable creature. Ready to render as-is. Absent for an empty deck. */
+            coverImgSrc?: string;
+            /** @description The cover card's name, for alt text. */
+            coverCardName?: string;
             /** @description Total card count (sum of quantities, main + side). */
             cardCount: number;
             estimatedValue: number;
@@ -1532,6 +1638,50 @@ export interface components {
             /** @description The push token to remove (e.g. on sign-out). */
             token: string;
         };
+        OptimizerBuyLineApiDto: {
+            name: string;
+            setCode: string;
+            number: string;
+            /** @description 'normal' | 'foil' */
+            finish: string;
+            quantity: number;
+            /** @description Unit retail (USD); null when no price is known */
+            unitPrice: number | null;
+            /** @description unitPrice * quantity (USD); null when no price */
+            lineTotal: number | null;
+        };
+        OptimizerApiResponseDto: {
+            /** @example Card Kingdom */
+            vendor: string;
+            /**
+             * @description Store-credit bonus as a fraction (0.30 = +30%)
+             * @example 0.3
+             */
+            bonusPct: number;
+            /** @description Buylist cash payout for the sell list (USD) */
+            cashValue: number;
+            /** @description Store credit offered: cashValue * (1 + bonusPct) */
+            storeCredit: number;
+            /** @description Retail cost of the priced buy-list lines (USD) */
+            buyListRetail: number;
+            /** @description True when store credit beats cash for acquiring the buy list */
+            recommendCredit: boolean;
+            /** @description Out-of-pocket saved by taking credit instead of cash (USD) */
+            creditAdvantage: number;
+            /** @description Out-of-pocket to buy the list with cash: max(0, R - C) */
+            cashOutOfPocket: number;
+            /** @description Out-of-pocket to buy the list with credit: max(0, R - C(1+b)) */
+            creditOutOfPocket: number;
+            /** @description Liquid cash kept if C exceeds the buy list: max(0, C - R) */
+            cashLeftover: number;
+            /** @description Credit left after the buy list, spendable only at the vendor */
+            lockedCredit: number;
+            /** @description Cards on the sell list (the CK vendor group) */
+            sellItemCount: number;
+            /** @description Buy-list lines with no current price (excluded from retail) */
+            itemsWithoutPrice: number;
+            buyLines: components["schemas"]["OptimizerBuyLineApiDto"][];
+        };
         PortfolioSummaryApiDto: {
             totalValue: number;
             totalCost?: number;
@@ -1625,6 +1775,26 @@ export interface components {
             /** Format: date-time */
             createdAt: string;
         };
+        SealedProductApiResponseDto: {
+            uuid: string;
+            name: string;
+            setCode: string;
+            category?: string;
+            subtype?: string;
+            cardCount?: number;
+            productSize?: number;
+            releaseDate?: string;
+            contentsSummary?: string;
+            purchaseUrlTcgplayer?: string;
+            tcgplayerProductId?: string;
+            /** @description Authenticated user's owned quantity; omitted when not logged in */
+            ownedQuantity?: number;
+        };
+        SealedProductInventoryApiDto: {
+            sealedProductUuid: string;
+            quantity: number;
+            sealedProduct?: components["schemas"]["SealedProductApiResponseDto"];
+        };
         SealedInventoryRequestDto: {
             sealedProductUuid: string;
             quantity: number;
@@ -1648,6 +1818,8 @@ export interface components {
             baseSize: number;
             totalSize: number;
             keyruneCode: string;
+            /** @description Cover art tail for the set's opening card, in the same form as a card's `imgSrc`. Lets a client render set artwork from the list response instead of fetching a card per set. Absent when the set has no card image. */
+            coverImgSrc?: string;
             block?: string;
             parentCode?: string;
             isMain: boolean;
@@ -1771,11 +1943,20 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
+            /** @description API keys for the user */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data?: components["schemas"]["ApiKeyDto"][];
+                        error?: string;
+                        message?: string;
+                        meta?: components["schemas"]["PaginationMeta"] | components["schemas"]["BlockPaginationMeta"];
+                    };
+                };
             };
         };
     };
@@ -1792,11 +1973,20 @@ export interface operations {
             };
         };
         responses: {
+            /** @description Created API key (raw key shown once) */
             201: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data?: components["schemas"]["CreatedApiKeyDto"];
+                        error?: string;
+                        message?: string;
+                        meta?: components["schemas"]["PaginationMeta"] | components["schemas"]["BlockPaginationMeta"];
+                    };
+                };
             };
         };
     };
@@ -1849,6 +2039,73 @@ export interface operations {
             };
             /** @description Invalid credentials */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AuthApiController_register: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Signup acknowledged — check email to verify (uniform, non-enumerating) */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data?: components["schemas"]["RegisterResponseDto"];
+                        error?: string;
+                        message?: string;
+                        meta?: components["schemas"]["PaginationMeta"] | components["schemas"]["BlockPaginationMeta"];
+                    };
+                };
+            };
+        };
+    };
+    AuthApiController_verifyEmail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VerifyEmailRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Email verified; session issued */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data?: components["schemas"]["LoginResponseDto"];
+                        error?: string;
+                        message?: string;
+                        meta?: components["schemas"]["PaginationMeta"] | components["schemas"]["BlockPaginationMeta"];
+                    };
+                };
+            };
+            /** @description Invalid or expired verification token */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2379,6 +2636,45 @@ export interface operations {
             };
         };
     };
+    getCardPrintings: {
+        parameters: {
+            query?: {
+                limit?: number;
+                page?: number;
+            };
+            header?: never;
+            path: {
+                setCode: string;
+                setNumber: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Printings of the card, including the one addressed by the path (clients that want "other printings" filter it out; the total counts every printing) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data?: components["schemas"]["CardApiResponseDto"][];
+                        error?: string;
+                        message?: string;
+                        meta?: components["schemas"]["PaginationMeta"] | components["schemas"]["BlockPaginationMeta"];
+                    };
+                };
+            };
+            /** @description Card not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     getCardBySetAndNumber: {
         parameters: {
             query?: never;
@@ -2712,6 +3008,8 @@ export interface operations {
     InventoryApiController_findAll: {
         parameters: {
             query?: {
+                /** @description Only holdings of this finish (normal or foil). */
+                finish?: "normal" | "foil";
                 filter?: string;
                 ascend?: boolean;
                 sort?: string;
@@ -3047,7 +3345,15 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data?: components["schemas"]["OptimizerApiResponseDto"];
+                        error?: string;
+                        message?: string;
+                        meta?: components["schemas"]["PaginationMeta"] | components["schemas"]["BlockPaginationMeta"];
+                    };
+                };
             };
         };
     };
@@ -3518,7 +3824,15 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data?: components["schemas"]["SealedProductApiResponseDto"][];
+                        error?: string;
+                        message?: string;
+                        meta?: components["schemas"]["PaginationMeta"] | components["schemas"]["BlockPaginationMeta"];
+                    };
+                };
             };
         };
     };
@@ -3538,7 +3852,15 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data?: components["schemas"]["SealedProductApiResponseDto"];
+                        error?: string;
+                        message?: string;
+                        meta?: components["schemas"]["PaginationMeta"] | components["schemas"]["BlockPaginationMeta"];
+                    };
+                };
             };
             /** @description Not found */
             404: {
@@ -3566,7 +3888,15 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data?: components["schemas"]["SealedProductInventoryApiDto"][];
+                        error?: string;
+                        message?: string;
+                        meta?: components["schemas"]["PaginationMeta"] | components["schemas"]["BlockPaginationMeta"];
+                    };
+                };
             };
         };
     };
@@ -3588,7 +3918,15 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data?: components["schemas"]["SealedProductInventoryApiDto"] | null;
+                        error?: string;
+                        message?: string;
+                        meta?: components["schemas"]["PaginationMeta"] | components["schemas"]["BlockPaginationMeta"];
+                    };
+                };
             };
             /** @description Premium subscription required */
             403: {
@@ -3646,7 +3984,15 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data?: components["schemas"]["SealedProductInventoryApiDto"] | null;
+                        error?: string;
+                        message?: string;
+                        meta?: components["schemas"]["PaginationMeta"] | components["schemas"]["BlockPaginationMeta"];
+                    };
+                };
             };
             /** @description Premium subscription required */
             403: {
