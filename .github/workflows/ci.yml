@@ -91,7 +91,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
-      contents: read
+      contents: write # attach the bundle to the release
       id-token: write # npm provenance + MCP Registry OIDC login
     env:
       VERSION: ${{ needs.version.outputs.version }}
@@ -143,6 +143,21 @@ jobs:
           ./mcp-publisher login github-oidc
           ./mcp-publisher publish
 
+      # --- Claude Desktop bundle. The README and matthewtowles.com both link to
+      # releases/latest/download/iwantmymtg-mcp.mcpb, so every release has to
+      # carry it or that link starts resolving to an older release. ---
+      - name: Build the Claude Desktop bundle
+        if: steps.guard.outputs.exists == 'false'
+        env:
+          IWMM_SKIP_TYPEGEN: '1' # keep the committed types; the bundle rebuilds
+        run: npm run bundle
+
+      - name: Attach the bundle to the release
+        if: steps.guard.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "$VERSION" iwantmymtg-mcp.mcpb --clobber
+
       # --- Smithery (optional, non-blocking). Skips cleanly without a key and
       # never fails the release after the irreversible npm publish. ---
       - name: Publish to Smithery
@@ -150,11 +165,9 @@ jobs:
         continue-on-error: true
         env:
           SMITHERY_API_KEY: ${{ secrets.SMITHERY_API_KEY }}
-          IWMM_SKIP_TYPEGEN: '1' # bundle rebuilds; keep it on the committed types
         run: |
           if [ -z "$SMITHERY_API_KEY" ]; then
             echo "SMITHERY_API_KEY not set; skipping Smithery publish."
             exit 0
           fi
-          npm run bundle
           npx -y @smithery/cli mcp publish ./iwantmymtg-mcp.mcpb -n matthewdtowles/iwantmymtg-mcp
