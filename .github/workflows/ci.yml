@@ -149,14 +149,21 @@ jobs:
       - name: Build the Claude Desktop bundle
         if: steps.guard.outputs.exists == 'false'
         env:
-          IWMM_SKIP_TYPEGEN: '1' # keep the committed types; the bundle rebuilds
+          MCPB_SKIP_BUILD: '1' # reuse the dist/ this job already compiled
         run: npm run bundle
 
+      # The release job creates the release only when the tag is new, so a tag
+      # whose release was deleted would leave nothing to upload to.
       - name: Attach the bundle to the release
         if: steps.guard.outputs.exists == 'false'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload "$VERSION" iwantmymtg-mcp.mcpb --clobber
+        run: |
+          if ! gh release view "$VERSION" >/dev/null 2>&1; then
+            echo "No release for $VERSION; creating one."
+            gh release create "$VERSION" --target "$GITHUB_SHA" --title "$VERSION" --generate-notes
+          fi
+          gh release upload "$VERSION" iwantmymtg-mcp.mcpb --clobber
 
       # --- Smithery (optional, non-blocking). Skips cleanly without a key and
       # never fails the release after the irreversible npm publish. ---
