@@ -91,7 +91,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
-      contents: read
+      contents: write # attach the bundle to the release
       id-token: write # npm provenance + MCP Registry OIDC login
     env:
       VERSION: ${{ needs.version.outputs.version }}
@@ -113,18 +113,30 @@ jobs:
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - if: steps.guard.outputs.exists == 'false'
+      # The bundle has its own guard, so a re-run can still attach it when an
+      # earlier run published to npm and then failed before the upload.
+      - id: asset
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if gh release view "$VERSION" --json assets --jq '.assets[].name' 2>/dev/null | grep -qx iwantmymtg-mcp.mcpb; then
+            echo "missing=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "missing=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.guard.outputs.exists == 'false' || steps.asset.outputs.missing == 'true'
         run: npm ci
 
       # Stamp the computed version into package.json + server.json (both ship a
       # 0.0.0-dev placeholder in git). manifest.json is synced from package.json
       # by the bundle script.
-      - if: steps.guard.outputs.exists == 'false'
+      - if: steps.guard.outputs.exists == 'false' || steps.asset.outputs.missing == 'true'
         run: |
           npm version --no-git-tag-version "$VERSION"
           jq --arg v "$VERSION" '.version = $v | .packages[0].version = $v' server.json > server.tmp && mv server.tmp server.json
 
-      - if: steps.guard.outputs.exists == 'false'
+      - if: steps.guard.outputs.exists == 'false' || steps.asset.outputs.missing == 'true'
         run: IWMM_SKIP_TYPEGEN=1 npm run build
 
       - name: Publish to npm
@@ -143,6 +155,28 @@ jobs:
           ./mcp-publisher login github-oidc
           ./mcp-publisher publish
 
+      # --- Claude Desktop bundle. The README and matthewtowles.com both link to
+      # releases/latest/download/iwantmymtg-mcp.mcpb, so every release has to
+      # carry it or that link starts resolving to an older release. ---
+      - name: Build the Claude Desktop bundle
+        if: steps.asset.outputs.missing == 'true'
+        env:
+          MCPB_SKIP_BUILD: '1' # reuse the dist/ this job already compiled
+        run: npm run bundle
+
+      # The release job creates the release only when the tag is new, so a tag
+      # whose release was deleted would leave nothing to upload to.
+      - name: Attach the bundle to the release
+        if: steps.asset.outputs.missing == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if ! gh release view "$VERSION" >/dev/null 2>&1; then
+            echo "No release for $VERSION; creating one."
+            gh release create "$VERSION" --target "$GITHUB_SHA" --title "$VERSION" --generate-notes
+          fi
+          gh release upload "$VERSION" iwantmymtg-mcp.mcpb --clobber
+
       # --- Smithery (optional, non-blocking). Skips cleanly without a key and
       # never fails the release after the irreversible npm publish. ---
       - name: Publish to Smithery
@@ -150,11 +184,9 @@ jobs:
         continue-on-error: true
         env:
           SMITHERY_API_KEY: ${{ secrets.SMITHERY_API_KEY }}
-          IWMM_SKIP_TYPEGEN: '1' # bundle rebuilds; keep it on the committed types
         run: |
           if [ -z "$SMITHERY_API_KEY" ]; then
             echo "SMITHERY_API_KEY not set; skipping Smithery publish."
             exit 0
           fi
-          npm run bundle
           npx -y @smithery/cli mcp publish ./iwantmymtg-mcp.mcpb -n matthewdtowles/iwantmymtg-mcp

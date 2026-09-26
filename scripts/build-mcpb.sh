@@ -8,7 +8,14 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 STAGE="$ROOT/build/mcpb"
 OUT="$ROOT/iwantmymtg-mcp.mcpb"
 
-npm --prefix "$ROOT" run build
+# CI already compiles before publishing, so it sets MCPB_SKIP_BUILD to reuse
+# that output rather than compiling the same source twice.
+if [ -z "${MCPB_SKIP_BUILD:-}" ]; then
+  npm --prefix "$ROOT" run build
+else
+  echo "MCPB_SKIP_BUILD set; using the existing dist/."
+  [ -d "$ROOT/dist" ] || { echo "dist/ is missing, so there is nothing to bundle." >&2; exit 1; }
+fi
 
 rm -rf "$ROOT/build"
 mkdir -p "$STAGE"
