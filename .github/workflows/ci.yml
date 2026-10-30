@@ -173,9 +173,17 @@ jobs:
       - name: Publish to MCP Registry
         if: steps.registry.outputs.exists == 'false'
         run: |
+          # npm processes a publish in the background and took up to 2m10s to
+          # serve 0.7.2-0.7.4, and the registry rejects the publish until it
+          # does. Wait up to 10 minutes for it before logging in, so the
+          # registry login is fresh when the publish runs.
+          for attempt in $(seq 40); do
+            npm view "iwantmymtg-mcp@$VERSION" version 2>/dev/null | grep -q . && break
+            echo "npm isn't serving $VERSION yet (wait $attempt/40)."
+            sleep 15
+          done
           ./mcp-publisher login github-oidc
-          # npm takes a moment to serve a just-published version, and the
-          # registry rejects the publish until it does. Retry only that error.
+          # The registry can still lag npm briefly. Retry only that error.
           max=6
           for attempt in $(seq "$max"); do
             if OUTPUT=$(./mcp-publisher publish 2>&1); then
