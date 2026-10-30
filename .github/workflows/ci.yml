@@ -153,7 +153,19 @@ jobs:
         if: steps.guard.outputs.exists == 'false'
         run: |
           ./mcp-publisher login github-oidc
-          ./mcp-publisher publish
+          # npm takes a moment to serve a just-published version, and the
+          # registry rejects the publish until it does. Retry only that error.
+          for attempt in 1 2 3 4 5 6; do
+            if OUTPUT=$(./mcp-publisher publish 2>&1); then
+              echo "$OUTPUT"
+              exit 0
+            fi
+            echo "$OUTPUT"
+            grep -q "was not found" <<<"$OUTPUT" || exit 1
+            echo "npm isn't serving $VERSION yet (attempt $attempt/6)."
+            [ "$attempt" -lt 6 ] && sleep 15
+          done
+          exit 1
 
       # --- Claude Desktop bundle. The README and matthewtowles.com both link to
       # releases/latest/download/iwantmymtg-mcp.mcpb, so every release has to
