@@ -1818,7 +1818,7 @@ export interface components {
             baseSize: number;
             totalSize: number;
             keyruneCode: string;
-            /** @description Cover art tail for the set's opening card, in the same form as a card's `imgSrc`. Lets a client render set artwork from the list response instead of fetching a card per set. Absent when the set has no card image. */
+            /** @description Cover art tail for the set's most valuable card, in the same form as a card's `imgSrc`. Lets a client render set artwork from the list response instead of fetching a card per set. Absent when the set has no card image. */
             coverImgSrc?: string;
             block?: string;
             parentCode?: string;
@@ -4010,7 +4010,7 @@ export interface operations {
                 group?: string;
                 /** @description Search query */
                 q?: string;
-                /** @description Show only base/main sets */
+                /** @description Show only base/main sets. Defaults to true — pass false to include all sets. */
                 baseOnly?: boolean;
                 /** @description Filter sets by name */
                 filter?: string;
@@ -4097,7 +4097,7 @@ export interface operations {
                 type?: string;
                 /** @description Filter by rarity */
                 rarity?: "common" | "uncommon" | "rare" | "mythic";
-                /** @description Show only base set cards */
+                /** @description Show only base set cards. Defaults to true — pass false to include variant printings. */
                 baseOnly?: boolean;
                 /** @description Filter cards by name */
                 filter?: string;
