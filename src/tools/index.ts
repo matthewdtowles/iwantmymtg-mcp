@@ -49,6 +49,7 @@ import {
   getRealizedGainsTool,
   refreshPortfolioTool,
 } from "./portfolio.js";
+import { getPriceMoversTool } from "./price-movers.js";
 import {
   listSealedInventoryTool,
   removeSealedInventoryTool,
@@ -82,6 +83,7 @@ export const tools: ToolDefinition[] = [
   getCardPricesTool,
   getCardPriceHistoryTool,
   getCardPrintingsTool,
+  getPriceMoversTool,
   searchSetsTool,
   getSetTool,
   listSetCardsTool,

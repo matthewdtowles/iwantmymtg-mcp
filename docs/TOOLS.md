@@ -2,9 +2,9 @@
      Run `npm run gen:tools-doc` after changing tools; CI enforces this. -->
 # Tools
 
-60 tools total. Generated from `src/tools/index.ts`.
+61 tools total. Generated from `src/tools/index.ts`.
 
-## No API key required (12)
+## No API key required (13)
 
 | Tool | Description |
 | --- | --- |
@@ -13,6 +13,7 @@
 | `get_card_prices` | Get current normal and foil prices for a specific card printing. |
 | `get_card_price_history` | Get the 30-day price history for a card printing (normal + foil). Older data is retained on a weekly/monthly cadence beyond 30 days. |
 | `get_card_printings` | List every printing of the card at this set code and collector number, most valuable first. Use this to compare what the same card costs across sets, or to find a cheaper printing. Prefer it over search_cards for that: search_cards matches names by substring, so it also returns unrelated cards whose names merely contain the term. The addressed printing is included in the results. |
+| `get_price_movers` | The week's biggest Magic: The Gathering price moves: the cards whose price rose (direction 'up', the default) or fell (direction 'down') the most over the last 7 days, one row per printing and finish, with today's price, the price a week ago, and the change in dollars and percent. Ranked by percent unless by is 'amount'. Cards worth less than minPrice (default $5) both before and after the move are left out, and so are prices that jumped back and forth during the week, which come from a missing vendor price rather than a real move. Narrow it with setCode, rarity, type, format legality or finish. |
 | `search_sets` | List Magic: The Gathering sets, optionally paginated. Returns set code, name, release date, type, and aggregate prices. |
 | `get_set` | Get detail for a single set by code (e.g. 'lea', 'mh3'). |
 | `list_set_cards` | List all cards in a set, paginated. Supports the same filters as search_cards (rarity, type, format, legality). |

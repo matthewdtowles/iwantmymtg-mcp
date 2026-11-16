@@ -18,6 +18,7 @@ const SAMPLE_INPUTS: Record<string, unknown> = {
   get_card_prices: { setCode: "lea", setNumber: "161" },
   get_card_price_history: { setCode: "lea", setNumber: "161" },
   get_card_printings: { setCode: "lea", setNumber: "161" },
+  get_price_movers: {},
   search_sets: {},
   get_set: { code: "mh3" },
   list_set_cards: { code: "mh3" },
@@ -157,6 +158,7 @@ describe("tool registry", () => {
     "get_card_prices",
     "get_card_price_history",
     "get_card_printings",
+    "get_price_movers",
     "search_sets",
     "get_set",
     "list_set_cards",
@@ -232,6 +234,29 @@ describe("read-only tools", () => {
   it("get_card_price_history: appends /price-history", async () => {
     const r = await call("get_card_price_history", { setCode: "lea", setNumber: "161" });
     assert.equal(r.url.pathname, "/api/v1/cards/lea/161/price-history");
+  });
+
+  it("get_price_movers: GET /api/v1/cards/movers with filters, no auth", async () => {
+    const r = await call("get_price_movers", {
+      direction: "down",
+      by: "amount",
+      minPrice: 20,
+      format: "modern",
+      limit: 10,
+    });
+    assert.equal(r.url.pathname, "/api/v1/cards/movers");
+    assert.equal(r.url.searchParams.get("direction"), "down");
+    assert.equal(r.url.searchParams.get("by"), "amount");
+    assert.equal(r.url.searchParams.get("minPrice"), "20");
+    assert.equal(r.url.searchParams.get("format"), "modern");
+    assert.equal(r.url.searchParams.get("limit"), "10");
+    assert.equal(r.headers.has("Authorization"), false);
+  });
+
+  it("get_price_movers: rejects legality without format", () => {
+    const tool = toolsByName.get_price_movers;
+    assert.ok(tool);
+    assert.throws(() => tool.inputSchema.parse({ legality: "banned" }));
   });
 
   it("search_sets: GET /api/v1/sets", async () => {
