@@ -35,7 +35,9 @@ iwantmymtg-mcp
 
 ## Claude Desktop
 
-Add to `claude_desktop_config.json` (macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`; Windows: `%APPDATA%\Claude\claude_desktop_config.json`):
+One-click install: download [iwantmymtg-mcp.mcpb](https://github.com/matthewdtowles/iwantmymtg-mcp/releases/latest/download/iwantmymtg-mcp.mcpb) and double-click it. Claude Desktop installs the server and asks for your API key (optional).
+
+Or add it by hand to `claude_desktop_config.json` (macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`; Windows: `%APPDATA%\Claude\claude_desktop_config.json`):
 
 ```json
 {
